@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Subscription Payment - Receiptlover</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="trial.js"></script>
+
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg,
+          #667eea 0%,
+          #764ba2 50%,
+          #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+  </style>
+</head>
+
+<body
+  class="bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 min-h-screen flex flex-col items-center justify-center p-4 pt-2">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md border border-purple-100 p-6 md:p-8">
+    <!-- Back Button -->
+    <button onclick="goBack()"
+      class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-semibold text-sm mb-4 transition bg-none border-none cursor-pointer">
+      <i class="fa-solid fa-arrow-left"></i>
+      <span>Back</span>
+    </button>
+
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <div class="flex items-center justify-center gap-3 mb-4">
+        <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center text-white shadow-lg">
+          <i class="fa-solid fa-heart text-xl"></i>
+        </div>
+        <h1 class="text-2xl md:text-3xl font-black gradient-text">
+          Receiptlover
+        </h1>
+      </div>
+      <h2 class="text-xl md:text-2xl font-bold text-slate-800 mb-2" id="headerTitle">
+        Unlock Access
+      </h2>
+      <p class="text-sm md:text-base text-slate-500" id="headerSubtitle">
+        Subscribe to continue creating unlimited receipts.
+      </p>
+    </div>
+
+    <!-- Premium User Banner (Hidden by default) -->
+    <div id="premiumBanner"
+      class="hidden mb-6 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 p-3 md:p-4 rounded-lg">
+      <div class="flex items-center gap-2 mb-2">
+        <i class="fa-solid fa-crown text-amber-600 text-lg"></i>
+        <p class="font-semibold text-amber-900 text-sm md:text-base">
+          You have an active subscription!
+        </p>
+      </div>
+      <p class="text-xs md:text-sm text-amber-800">
+        Subscribe for additional months to extend your access ahead of time.
+      </p>
+    </div>
+
+    <!-- Subscription Plan -->
+    <div class="bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-purple-200 p-4 md:p-6 rounded-2xl mb-6">
+      <h3 class="text-xs font-bold text-purple-600 uppercase tracking-widest mb-4">
+        Subscription Plan
+      </h3>
+
+      <!-- Month Input -->
+      <div class="mb-4">
+        <label for="monthInput" class="block text-xs md:text-sm font-semibold text-slate-700 mb-2">
+          Number of Months
+        </label>
+        <input type="number" id="monthInput" min="1" value="1" oninput="updatePricing()"
+          class="w-full px-3 md:px-4 py-2 md:py-3 bg-white border-2 border-purple-200 rounded-lg text-slate-800 font-medium focus:outline-none focus:border-purple-500 transition text-sm md:text-base"
+          placeholder="Enter number of months" />
+      </div>
+
+      <!-- Pricing Display -->
+      <div class="text-center bg-white p-4 rounded-xl border border-purple-100">
+        <p class="text-xs text-slate-600 mb-1">Total Amount</p>
+        <div class="text-3xl md:text-4xl font-black text-slate-800 mb-1">
+          <span id="totalPrice">35</span> GHS
+        </div>
+        <p class="text-xs md:text-sm text-slate-500">
+          <span id="monthlyRate">35</span> GHS/month
+        </p>
+      </div>
+    </div>
+
+    <!-- MoMo Payment Button -->
+    <a href="manual-payment.html" onclick="preparePayment(event)"
+      class="block w-full gradient-bg text-white font-bold py-3 md:py-4 px-4 rounded-xl hover:shadow-2xl transition shadow-lg shadow-purple-300 hover:scale-[1.02] transform text-center text-sm md:text-base no-underline">
+      <i class="fa-brands fa-whatsapp mr-2"></i>
+      <span id="buttonText">Pay with MoMo (35 GHS)</span>
+    </a>
+
+    <p id="statusMessage" class="mt-4 text-xs md:text-sm text-slate-500 text-center"></p>
+
+    <!-- Logout Button -->
+    <button onclick="logout()"
+      class="mt-4 md:mt-6 w-full text-xs md:text-sm text-red-400 hover:text-red-600 font-bold py-2 px-4 rounded transition">
+      <i class="fa-solid fa-sign-out-alt mr-1"></i> Log Out
+    </button>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnN7AODVubqLmnOniyjQkSWGvBJJ2kMQU",
+      authDomain: "invoiceapp-3fe51.firebaseapp.com",
+      projectId: "invoiceapp-3fe51",
+      storageBucket: "invoiceapp-3fe51.firebasestorage.app",
+      messagingSenderId: "178955208220",
+      appId: "1:178955208220:web:128a713add6c992f9981d9",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    const BASE_PRICE = 35; // GHS per month
+
+    // 1. Auth State Listener
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        currentUser = user;
+        db.collection("users")
+          .doc(user.uid)
+          .get()
+          .then((doc) => {
+            if (doc.exists) {
+              const data = doc.data();
+              const now = new Date();
+              const expiry = data.subscriptionExpiry ? data.subscriptionExpiry.toDate() : null;
+
+              // Update UI if User is already Premium
+              if (expiry && expiry > now) {
+                document.getElementById("premiumBanner").classList.remove("hidden");
+                document.getElementById("headerTitle").innerText = "Extend Your Subscription";
+                document.getElementById("headerSubtitle").innerText = "Add more months to your active subscription.";
+              }
+
+              // Show trial countdown if applicable
+              if (data.subscriptionStatus === "trial" && expiry) {
+                if (window.startTrialBanner) window.startTrialBanner(expiry.getTime());
+              }
+            }
+          })
+          .catch((err) => console.error("Error fetching user data:", err));
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    /**
+     * Smart Back Button Logic
+     * If active subscription -> Dashboard
+     * If expired -> Logout & Login Page
+     */
+    async function goBack() {
+      if (!currentUser) {
+        window.location.href = "login.html";
+        return;
+      }
+
+      try {
+        const doc = await db.collection("users").doc(currentUser.uid).get();
+        const now = new Date();
+
+        if (doc.exists) {
+          const data = doc.data();
+          const expiry = data.subscriptionExpiry ? data.subscriptionExpiry.toDate() : null;
+
+          // Check if subscription or trial is still valid
+          if (expiry && expiry > now) {
+            window.location.href = "dashboard.html";
+          } else {
+            // Subscription expired: Sign out and force login
+            await auth.signOut();
+            window.location.href = "login.html";
+          }
+        } else {
+          window.location.href = "login.html";
+        }
+      } catch (err) {
+        console.error("Error in goBack:", err);
+        window.location.href = "login.html";
+      }
+    }
+
+    // 2. Pricing Logic
+    function updatePricing() {
+      const monthsInput = document.getElementById("monthInput").value;
+      const months = parseInt(monthsInput) || 1;
+
+      if (months < 1) {
+        document.getElementById("monthInput").value = 1;
+        return;
+      }
+
+      const totalPrice = BASE_PRICE * months;
+      document.getElementById("totalPrice").innerText = totalPrice;
+      document.getElementById("monthlyRate").innerText = BASE_PRICE;
+      document.getElementById("buttonText").innerText = `Pay with MoMo (${totalPrice} GHS)`;
+    }
+
+    // 3. Payment Preparation
+    function preparePayment(event) {
+      const monthsInput = document.getElementById("monthInput").value;
+      const months = parseInt(monthsInput) || 1;
+
+      if (months < 1) {
+        event.preventDefault();
+        alert("Please enter a valid number of months (minimum 1)");
+        return;
+      }
+
+      sessionStorage.setItem("selectedMonths", months);
+    }
+
+    // 4. Logout Logic
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
+    }
+
+    // Initial call to set default pricing
+    updatePricing();
+  </script>
+</body>
+
+</html>

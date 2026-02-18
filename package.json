@@ -1,0 +1,16 @@
+{
+  "name": "invoice-app-email-server",
+  "version": "1.0.0",
+  "description": "Minimal server to send emails via EmailJS REST API for Invoice_app",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^16.0.0",
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7"
+  }
+}

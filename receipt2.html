@@ -1,0 +1,780 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Formal Sales Receipt - Landscape</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Firebase Auth Protection -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="trial.js"></script>
+  <script>
+    // REPLACE WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnN7AODVubqLmnOniyjQkSWGvBJJ2kMQU",
+      authDomain: "invoiceapp-3fe51.firebaseapp.com",
+      projectId: "invoiceapp-3fe51",
+      storageBucket: "invoiceapp-3fe51.firebasestorage.app",
+      messagingSenderId: "178955208220",
+      appId: "1:178955208220:web:128a713add6c992f9981d9",
+    };
+
+    // Initialize (prevent re-init error if multiple scripts use it, though here it's standalone page)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        // Not logged in -> Redirect to Login
+        window.location.href = "login.html";
+      } else {
+        // Logged in -> Check Subscription
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          const now = new Date();
+
+          // Check if expiry date exists and is in the future
+          if (
+            !data.subscriptionExpiry ||
+            data.subscriptionExpiry.toDate() < now
+          ) {
+            // Expired -> show subscribe modal instead of immediate redirect
+            if (window.blockPageWithSubscribe)
+              window.blockPageWithSubscribe();
+            else window.location.href = "payment.html";
+          }
+          // Otherwise, access granted.
+        } else {
+          if (window.blockPageWithSubscribe) window.blockPageWithSubscribe();
+          else window.location.href = "payment.html";
+        }
+      }
+    });
+  </script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,700;1,400&family=Inter:wght@400;700&display=swap");
+
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    .formal-font {
+      font-family: "Crimson Pro", serif;
+    }
+
+    /* Landscape A5 / Receipt Dimensions */
+    /* Landscape A5 / Receipt Dimensions */
+    #receiptCapture {
+      width: 210mm;
+      min-height: 140mm;
+      background: white;
+      padding: 12mm;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    #innerBorder {
+      border: 4px solid #334155;
+      padding: 8mm;
+      min-height: 116mm;
+      position: relative;
+    }
+
+    .dotted-line {
+      border-bottom: 1px dotted #64748b;
+      display: inline-block;
+      padding-left: 10px;
+      font-style: italic;
+      color: #1e293b;
+    }
+
+    .preview-wrapper {
+      width: 100%;
+      min-height: 80vh;
+      background: #e5e7eb;
+      border-radius: 0.75rem;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+      padding: 20px 0;
+    }
+
+    .pdf-scale-container {
+      transform-origin: top center;
+    }
+
+    @media (max-width: 900px) {
+      .pdf-scale-container {
+        transform: scale(0.7);
+      }
+    }
+
+    @media (max-width: 650px) {
+      .pdf-scale-container {
+        transform: scale(0.4);
+      }
+    }
+
+    @media (max-width: 450px) {
+      .pdf-scale-container {
+        transform: scale(0.35);
+      }
+    }
+
+    .avoid-pagebreak {
+      page-break-inside: avoid;
+    }
+
+    .color-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(to right,
+          #ff0000 0%, #ffff00 17%, #00ff00 33%,
+          #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .color-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #64748b;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-200 p-4 md:p-8">
+  <div class="max-w-7xl mx-auto mb-4">
+    <a href="dashboard.html"
+      class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div class="lg:col-span-5 space-y-6">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+        <h2 class="text-lg font-bold flex items-center gap-2">
+          <i class="fa-solid fa-file-contract text-blue-600"></i> Receipt
+          Details
+        </h2>
+
+        <div class="space-y-4">
+          <h3 class="text-sm font-bold text-slate-500 uppercase border-b pb-1">
+            Logo & Business Info
+          </h3>
+          <div class="flex items-center justify-center w-full">
+            <label
+              class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
+              <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                <i class="fa-solid fa-image text-2xl text-slate-400 mb-2"></i>
+                <p class="text-xs text-slate-500">Upload Logo</p>
+              </div>
+              <input type="file" id="logoUpload" class="hidden" accept="image/*" onchange="loadLogo(this)" />
+            </label>
+          </div>
+          <div class="space-y-1">
+            <label for="bizName" class="text-xs font-bold text-slate-400 uppercase">Company Name</label>
+            <input type="text" id="bizName" placeholder="Company Name" class="w-full p-3 border rounded-xl"
+              oninput="update()" />
+          </div>
+          <div class="space-y-1">
+            <label for="bizInfo" class="text-xs font-bold text-slate-400 uppercase">Business Info (Address, Email,
+              Phone)</label>
+            <textarea id="bizInfo" placeholder="Address, Email, Phone Numbers"
+              class="w-full p-3 border rounded-xl h-20 text-sm" oninput="update()"></textarea>
+          </div>
+
+          <h3 class="text-sm font-bold text-slate-500 uppercase border-b pb-1 mt-6">
+            Transaction Info
+          </h3>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <label for="rNo" class="text-xs font-bold text-slate-400 uppercase">Receipt No.</label>
+              <input type="text" id="rNo" placeholder="Receipt No." class="w-full p-3 border rounded-xl"
+                oninput="update()" />
+            </div>
+            <div class="space-y-1">
+              <label for="rDate" class="text-xs font-bold text-slate-400 uppercase">Date</label>
+              <input type="date" id="rDate" class="w-full p-3 border rounded-xl text-slate-500" oninput="update()" />
+            </div>
+            <div class="space-y-1">
+              <label for="currency" class="text-xs font-bold text-slate-400 uppercase">Currency</label>
+              <select id="currency" class="w-full p-3 border rounded-xl bg-white" onchange="update()">
+                <option value="$" data-symbol="$" data-name="Dollars">
+                  USA (USD)
+                </option>
+                <option value="$" data-symbol="$" data-name="Dollars">
+                  Canada (CAD)
+                </option>
+                <option value="£" data-symbol="£" data-name="Pounds">
+                  UK (GBP)
+                </option>
+                <option value="€" data-symbol="€" data-name="Euros">
+                  Europe (EUR)
+                </option>
+                <option value="₣" data-symbol="₣" data-name="Francs">
+                  Switzerland (CHF)
+                </option>
+                <option value="A$" data-symbol="A$" data-name="Dollars">
+                  Australia (AUD)
+                </option>
+                <option value="¥" data-symbol="¥" data-name="Yen">
+                  Japan (JPY)
+                </option>
+                <option value="¥" data-symbol="¥" data-name="Yuan">
+                  China (CNY)
+                </option>
+                <option value="₹" data-symbol="₹" data-name="Rupees">
+                  India (INR)
+                </option>
+                <option value="S$" data-symbol="S$" data-name="Dollars">
+                  Singapore (SGD)
+                </option>
+                <option value="HK$" data-symbol="HK$" data-name="Dollars">
+                  Hong Kong (HKD)
+                </option>
+                <option value="$" data-symbol="$" data-name="Pesos">
+                  Mexico (MXN)
+                </option>
+                <option value="R$" data-symbol="R$" data-name="Reais">
+                  Brazil (BRL)
+                </option>
+                <option value="₨" data-symbol="₨" data-name="Rupees">
+                  Pakistan (PKR)
+                </option>
+                <option value="د.إ" data-symbol="د.إ" data-name="Dirhams">
+                  UAE (AED)
+                </option>
+                <option value="฿" data-symbol="฿" data-name="Baht">
+                  Thailand (THB)
+                </option>
+                <optgroup label="African Countries">
+                  <option value="E£" data-symbol="E£" data-name="Pounds">
+                    Egypt (EGP)
+                  </option>
+                  <option value="GH₵" data-symbol="GH₵" data-name="Ghana Cedis">
+                    Ghana (GHS)
+                  </option>
+                  <option value="₦" data-symbol="₦" data-name="Naira">
+                    Nigeria (NGN)
+                  </option>
+                  <option value="R" data-symbol="R" data-name="Rand">
+                    South Africa (ZAR)
+                  </option>
+                  <option value="Sh" data-symbol="Sh" data-name="Shillings">
+                    Kenya (KES)
+                  </option>
+                  <option value="Sh" data-symbol="Sh" data-name="Shillings">
+                    Tanzania (TZS)
+                  </option>
+                  <option value="Sh" data-symbol="Sh" data-name="Shillings">
+                    Uganda (UGX)
+                  </option>
+                  <option value="د.م." data-symbol="د.م." data-name="Dirhams">
+                    Morocco (MAD)
+                  </option>
+                  <option value="د.ت" data-symbol="د.ت" data-name="Dinars">
+                    Tunisia (TND)
+                  </option>
+                  <option value="د.ج" data-symbol="د.ج" data-name="Dinars">
+                    Algeria (DZD)
+                  </option>
+                  <option value="Br" data-symbol="Br" data-name="Birr">
+                    Ethiopia (ETB)
+                  </option>
+                  <option value="P" data-symbol="P" data-name="Pula">
+                    Botswana (BWP)
+                  </option>
+                  <option value="K" data-symbol="K" data-name="Kwacha">
+                    Zambia (ZMW)
+                  </option>
+                  <option value="Z$" data-symbol="Z$" data-name="Dollars">
+                    Zimbabwe (ZWL)
+                  </option>
+                  <option value="Fr" data-symbol="Fr" data-name="Francs">
+                    Rwanda (RWF)
+                  </option>
+                  <option value="Sh" data-symbol="Sh" data-name="Shillings">
+                    Somalia (SOS)
+                  </option>
+                  <option value="E" data-symbol="E" data-name="Lilangeni">
+                    Eswatini (SZL)
+                  </option>
+                  <option value="L" data-symbol="L" data-name="Loti">
+                    Lesotho (LSL)
+                  </option>
+                  <option value="MT" data-symbol="MT" data-name="Meticals">
+                    Mozambique (MZN)
+                  </option>
+                  <option value="Kz" data-symbol="Kz" data-name="Kwanza">
+                    Angola (AOA)
+                  </option>
+                </optgroup>
+              </select>
+            </div>
+
+            <h3 class="text-sm font-bold text-slate-500 uppercase border-b pb-1 mt-6">
+              Payment Details
+            </h3>
+            <div class="space-y-1">
+              <label for="receivedFrom" class="text-xs font-bold text-slate-400 uppercase">Received From</label>
+              <input type="text" id="receivedFrom" placeholder="Name" class="w-full p-3 border rounded-xl"
+                oninput="update()" />
+            </div>
+            <div class="space-y-1">
+              <label for="amtFigure" class="text-xs font-bold text-slate-400 uppercase">Amount Paid</label>
+              <input type="number" id="amtFigure" placeholder="Amount Paid (Figure)"
+                class="w-full p-3 border rounded-xl" oninput="update()" />
+            </div>
+            <div class="space-y-1">
+              <label for="balanceAmt" class="text-xs font-bold text-slate-400 uppercase">Balance Owed</label>
+              <input type="number" id="balanceAmt" placeholder="Balance Owed (Optional)"
+                class="w-full p-3 border rounded-xl" oninput="update()" />
+            </div>
+            <div class="space-y-1">
+              <label for="purpose" class="text-xs font-bold text-slate-400 uppercase">Payment For</label>
+              <input type="text" id="purpose" placeholder="e.g. 1 Plot of Land" class="w-full p-3 border rounded-xl"
+                oninput="update()" />
+            </div>
+
+            <div class="space-y-1">
+              <label for="method" class="text-xs font-bold text-slate-400 uppercase">Payment Method</label>
+              <select id="method" class="w-full p-3 border rounded-xl" onchange="update()">
+                <option value="Cash">Cash</option>
+                <option value="Cheque">Cheque</option>
+                <option value="Card">Card</option>
+                <option value="Momo">Momo</option>
+              </select>
+            </div>
+
+            <div class="space-y-1">
+              <label for="note" class="text-xs font-bold text-slate-400 uppercase">Note / Thank You</label>
+              <textarea id="note" placeholder="Message" class="w-full p-3 border rounded-xl h-16"
+                oninput="update()"></textarea>
+            </div>
+
+            <h3 class="text-sm font-bold text-slate-500 uppercase border-b pb-1 mt-6">
+              Signature
+            </h3>
+            <div class="space-y-2">
+              <label class="text-sm font-bold text-slate-500">Sign Here</label>
+              <div class="border-2 border-dashed border-slate-300 rounded-xl bg-slate-50 touch-none">
+                <canvas id="sigCanvas" class="w-full h-32 rounded-xl cursor-crosshair"></canvas>
+              </div>
+              <button onclick="clearSignature()" class="text-xs text-red-500 font-bold hover:underline">
+                Clear Signature
+              </button>
+            </div>
+
+            <h3 class="text-sm font-bold text-slate-500 uppercase border-b pb-1 mt-6">
+              Colors
+            </h3>
+            <div>
+              <label class="text-xs font-bold text-slate-400 uppercase">Theme Color Slider</label>
+              <div class="mt-2">
+                <input type="range" min="0" max="360" value="220" class="color-slider" id="colorPicker"
+                  oninput="handleColorSlider(this.value)">
+              </div>
+            </div>
+
+            <button onclick="downloadPDF()"
+              class="w-full bg-blue-600 text-white font-bold py-4 rounded-xl hover:bg-blue-700 transition shadow-lg shadow-blue-200">
+              <i class="fa-solid fa-download mr-2"></i> DOWNLOAD RECEIPT
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="lg:col-span-7">
+      <div class="sticky top-10">
+        <div class="preview-wrapper shadow-inner overflow-auto">
+          <div id="previewScale" class="pdf-scale-container">
+            <div id="receiptCapture" class="formal-font shadow-lg">
+              <div id="innerBorder">
+                <div id="topBorder" class="flex justify-between items-start border-b-4 border-blue-600 pb-4 mb-6">
+                  <div class="flex gap-4 items-center">
+                    <img id="pLogo" src="" class="h-16 hidden" />
+                    <div>
+                      <h1 id="pBizName" class="text-2xl font-black uppercase leading-tight">
+                        Company Name
+                      </h1>
+                      <p id="pBizInfo" class="text-xs font-sans text-slate-500 whitespace-pre-line"></p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <h2 id="accentText" class="text-3xl font-black text-blue-600 italic">
+                      OFFICIAL RECEIPT
+                    </h2>
+                    <p class="font-sans text-sm mt-1">
+                      NO:
+                      <span id="pNo" class="font-bold border-b border-slate-400">---</span>
+                    </p>
+                    <p class="font-sans text-sm">
+                      Date:
+                      <span id="pDate" class="border-b border-slate-400">---</span>
+                    </p>
+                  </div>
+                </div>
+
+                <div class="text-lg leading-[2.5] text-slate-700">
+                  Received from
+                  <span class="dotted-line min-w-[350px]" id="pRecFrom"></span>
+                  the sum of
+                  <span class="dotted-line flex-1 min-w-[500px]" id="pAmtWords"></span>
+                  <br />
+                  being
+                  <span class="dotted-line min-w-[550px]" id="pPurpose"></span>
+                </div>
+
+                <div class="mt-8 flex justify-between items-end">
+                  <div class="space-y-4">
+                    <!-- Added id="amtBox" for theme color application -->
+                    <div id="amtBox" class="border-2 border-slate-800 p-4 min-w-[240px] bg-slate-50">
+                      <div class="text-sm font-sans font-bold uppercase mb-1">
+                        Amount Paid
+                      </div>
+                      <!-- Changed to block and added padding to ensure text is visible in PDF -->
+                      <div class="text-2xl font-black text-black" id="pAmtFig">
+                        ---
+                      </div>
+                    </div>
+                    <div class="text-sm font-sans">
+                      <strong>Balance:</strong>
+                      <span id="pBalance" class="border-b border-slate-400 px-4">---</span>
+                    </div>
+                  </div>
+
+                  <div class="text-center">
+                    <p class="text-sm font-sans mb-1">
+                      Payment Method:
+                      <span id="pMethod" class="font-bold">---</span>
+                    </p>
+                    <div class="w-48 border-b border-slate-800 mb-1 relative h-12 flex items-end justify-center">
+                      <img id="pSignature" class="absolute bottom-0 h-16 object-contain hidden pointer-events-none" />
+                    </div>
+                    <p class="text-xs uppercase font-sans font-bold">Signature</p>
+                  </div>
+                </div>
+
+                <div class="mt-8 pt-4 border-t border-slate-100 flex justify-between items-center">
+                  <p id="pNote" class="text-sm italic text-slate-500">
+                    Thank you for your business!
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <script>
+            function handleColorSlider(hue) {
+              // Converts the 0-360 value into a HSL color string
+              const color = `hsl(${hue}, 75%, 45%)`;
+
+              // Apply to the 'OFFICIAL RECEIPT' text
+              const accentText = document.getElementById("accentText");
+              if (accentText) accentText.style.color = color;
+
+              // Apply to the top border/header of the receipt
+              const topHeader = document.getElementById("topBorder"); // or "topHeader" depending on your ID
+              if (topHeader) topHeader.style.borderColor = color;
+
+              // Apply to the amount box if you want it to match
+              const amtBox = document.getElementById("amtBox");
+              if (amtBox) amtBox.style.borderColor = color;
+            }
+            function loadLogo(input) {
+              if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                  const img = document.getElementById("pLogo");
+                  img.src = e.target.result;
+                  img.classList.remove("hidden");
+                };
+                reader.readAsDataURL(input.files[0]);
+              }
+            }
+
+            function changeColor(hex) {
+              document.getElementById("accentText").style.color = hex;
+              document.getElementById("topBorder").style.borderColor = hex;
+            }
+
+            // Enhanced Number to Words
+            function numberToWords(n) {
+              if (n < 0) return "Minus " + numberToWords(-n);
+              if (n == 0) return "Zero";
+
+              const a = [
+                "",
+                "one",
+                "two",
+                "three",
+                "four",
+                "five",
+                "six",
+                "seven",
+                "eight",
+                "nine",
+                "ten",
+                "eleven",
+                "twelve",
+                "thirteen",
+                "fourteen",
+                "fifteen",
+                "sixteen",
+                "seventeen",
+                "eighteen",
+                "nineteen",
+              ];
+              const b = [
+                "",
+                "",
+                "twenty",
+                "thirty",
+                "forty",
+                "fifty",
+                "sixty",
+                "seventy",
+                "eighty",
+                "ninety",
+              ];
+              const g = [
+                "",
+                "thousand",
+                "million",
+                "billion",
+                "trillion",
+                "quadrillion",
+                "quintillion",
+                "sextillion",
+                "septillion",
+                "octillion",
+                "nonillion",
+              ];
+
+              function makeGroup(num) {
+                let str = "";
+                if (num >= 100) {
+                  str += a[Math.floor(num / 100)] + " hundred ";
+                  num %= 100;
+                }
+                if (num > 0) {
+                  if (num < 20) {
+                    str += a[num] + " ";
+                  } else {
+                    str += b[Math.floor(num / 10)] + " ";
+                    if (num % 10 > 0) str += a[num % 10] + " ";
+                  }
+                }
+                return str;
+              }
+
+              let word = "";
+              let groupIndex = 0;
+
+              if (n == 0) return "Zero";
+
+              while (n > 0) {
+                let remainder = n % 1000;
+                if (remainder > 0) {
+                  let groupWord = makeGroup(remainder);
+                  word = groupWord + g[groupIndex] + " " + word;
+                }
+                n = Math.floor(n / 1000);
+                groupIndex++;
+              }
+              return word.trim();
+            }
+
+            // Signature Logic
+            const canvas = document.getElementById("sigCanvas");
+            const ctx = canvas.getContext("2d");
+            let isDrawing = false;
+
+            function resizeCanvas() {
+              // Save existing content before resize
+              const tempImage = canvas.toDataURL();
+
+              // Set canvas resolution to match display size
+              const rect = canvas.getBoundingClientRect();
+              canvas.width = rect.width;
+              canvas.height = rect.height;
+
+              // Restore styles after resize
+              ctx.lineWidth = 2;
+              ctx.lineCap = "round";
+              ctx.strokeStyle = "#000";
+
+              // Restore content
+              const img = new Image();
+              img.onload = () => ctx.drawImage(img, 0, 0);
+              img.src = tempImage;
+            }
+
+            // Resize initially and on resize
+            window.addEventListener("resize", resizeCanvas);
+            // Wait for layout
+            setTimeout(resizeCanvas, 100);
+
+            function startDraw(e) {
+              isDrawing = true;
+              draw(e);
+            }
+
+            function endDraw() {
+              isDrawing = false;
+              ctx.beginPath();
+              updateSignaturePreview();
+            }
+
+            function draw(e) {
+              if (!isDrawing) return;
+              e.preventDefault(); // Stop scrolling on touch
+
+              const rect = canvas.getBoundingClientRect();
+              const clientX = e.clientX || e.touches[0].clientX;
+              const clientY = e.clientY || e.touches[0].clientY;
+
+              ctx.lineTo(clientX - rect.left, clientY - rect.top);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(clientX - rect.left, clientY - rect.top);
+            }
+
+            function clearSignature() {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              updateSignaturePreview();
+              document.getElementById("pSignature").classList.add("hidden");
+            }
+
+            function updateSignaturePreview() {
+              const dataUrl = canvas.toDataURL();
+              // Check if canvas is empty by simple pixel check or just update
+              // A simple way to check emptiness is complex, so we'll just update for now.
+              // If cleared, it's transparent.
+              const pSig = document.getElementById("pSignature");
+              pSig.src = dataUrl;
+              pSig.classList.remove("hidden");
+            }
+
+            // Events
+            canvas.addEventListener("mousedown", startDraw);
+            canvas.addEventListener("mouseup", endDraw);
+            canvas.addEventListener("mousemove", draw);
+
+            canvas.addEventListener("touchstart", startDraw);
+            canvas.addEventListener("touchend", endDraw);
+            canvas.addEventListener("touchmove", draw);
+
+            function update() {
+              const select = document.getElementById("currency");
+              const sym =
+                select.options[select.selectedIndex].getAttribute("data-symbol");
+              const currencyName =
+                select.options[select.selectedIndex].getAttribute("data-name");
+
+              const amt = parseFloat(document.getElementById("amtFigure").value) || 0;
+              const bal = document.getElementById("balanceAmt").value;
+
+              document.getElementById("pBizName").innerText =
+                document.getElementById("bizName").value || "YOUR COMPANY NAME";
+              document.getElementById("pBizInfo").innerText =
+                document.getElementById("bizInfo").value;
+              document.getElementById("pNo").innerText =
+                document.getElementById("rNo").value || "---";
+
+              // Date Logic
+              const dateInput = document.getElementById("rDate").value;
+              const displayDate = dateInput
+                ? new Date(dateInput).toLocaleDateString()
+                : new Date().toLocaleDateString();
+              document.getElementById("pDate").innerText = displayDate;
+
+              document.getElementById("pRecFrom").innerText =
+                document.getElementById("receivedFrom").value;
+              document.getElementById("pPurpose").innerText =
+                document.getElementById("purpose").value;
+              document.getElementById("pMethod").innerText =
+                document.getElementById("method").value;
+              document.getElementById("pNote").innerText =
+                document.getElementById("note").value || "Thank you!";
+
+              document.getElementById("pAmtFig").innerText =
+                `${sym} ${amt.toLocaleString()}`;
+
+              let words = numberToWords(Math.floor(amt));
+              document.getElementById("pAmtWords").innerText =
+                words.toUpperCase() +
+                " " +
+                (currencyName ? currencyName.toUpperCase() : "DOLLARS") +
+                " ONLY";
+
+              document.getElementById("pBalance").innerText = bal
+                ? `${sym} ${parseFloat(bal).toLocaleString()}`
+                : "---";
+            }
+
+            function downloadPDF() {
+              const element = document.getElementById("receiptCapture");
+              const opt = {
+                margin: [15, 40, 15, 15], // [top, right, bottom, left] - larger right margin shifts content left visually, smaller left margin shifts right
+                filename: "Official_Receipt.pdf",
+                image: { type: "jpeg", quality: 1 },
+                html2canvas: {
+                  scale: 2,
+                  useCORS: true,
+                  letterRendering: true,
+                  scrollY: 0,
+                  scrollX: 0,
+                  windowWidth: document.documentElement.offsetWidth || 1200,
+                  onclone: (clonedDoc) => {
+                    // CRITICAL: Ensure the cloned element is not affected by mobile scaling transforms
+                    const pScale = clonedDoc.getElementById('previewScale');
+                    if (pScale) {
+                      pScale.style.transform = 'none';
+                      pScale.style.width = 'auto';
+                      pScale.style.height = 'auto';
+                      pScale.style.margin = '0';
+                      pScale.style.padding = '0';
+                    }
+                    const rCap = clonedDoc.getElementById('receiptCapture');
+                    if (rCap) {
+                      rCap.style.boxShadow = 'none';
+                      rCap.style.margin = '0 auto'; // Center horizontally
+                      rCap.style.marginLeft = '30mm'; // Push to the right
+                    }
+                  }
+                },
+                jsPDF: { unit: "mm", format: "a4", orientation: "landscape" },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+              };
+
+              // Execute html2pdf
+              html2pdf().set(opt).from(element).save();
+            }
+
+            // Init
+            update();
+          </script>
+</body>
+
+</html>

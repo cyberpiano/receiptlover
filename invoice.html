@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Invoice Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap");
+
+    body {
+      font-family: "Plus Jakarta Sans", sans-serif;
+    }
+
+    .preview-wrapper {
+      width: 100%;
+      min-height: 80vh;
+      background: #e5e7eb;
+      border-radius: 0.75rem;
+      display: flex;
+      justify-content: center;
+      overflow: auto;
+      padding: 20px 0;
+    }
+
+    /* The trick: Use a container to handle the scaling for mobile view */
+    .pdf-scale-container {
+      transform-origin: top center;
+    }
+
+    /* Fixed A4 dimensions for the preview */
+    #invoicePreview {
+      width: 210mm;
+      min-height: 296mm;
+      /* Slightly less than 297 to avoid margin overflow */
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(2, 6, 23, 0.1);
+      padding: 20mm;
+      box-sizing: border-box;
+      position: relative;
+    }
+
+    /* Mobile Responsive Scaling */
+    @media (max-width: 900px) {
+      .pdf-scale-container {
+        transform: scale(0.7);
+      }
+    }
+
+    @media (max-width: 650px) {
+      .pdf-scale-container {
+        transform: scale(0.4);
+      }
+    }
+
+    @media (max-width: 450px) {
+      .pdf-scale-container {
+        transform: scale(0.35);
+      }
+    }
+
+    /* Mobile Input Adjustments */
+    @media (max-width: 640px) {
+      .grid-cols-2 {
+        grid-template-columns: 1fr;
+      }
+
+      #itemsList div {
+        flex-wrap: wrap;
+      }
+
+      #itemsList input[type="number"] {
+        flex: 1;
+      }
+    }
+
+    .avoid-pagebreak {
+      page-break-inside: avoid;
+    }
+
+    .color-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 12px;
+      border-radius: 6px;
+      background: linear-gradient(to right,
+          #ff0000 0%, #ffff00 17%, #00ff00 33%,
+          #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .color-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #64748b;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+    }
+
+    .color-slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid #64748b;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
+      cursor: pointer;
+    }
+  </style>
+  <!-- Firebase Auth Protection -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="trial.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnN7AODVubqLmnOniyjQkSWGvBJJ2kMQU",
+      authDomain: "invoiceapp-3fe51.firebaseapp.com",
+      projectId: "invoiceapp-3fe51",
+      storageBucket: "invoiceapp-3fe51.firebasestorage.app",
+      messagingSenderId: "178955208220",
+      appId: "1:178955208220:web:128a713add6c992f9981d9",
+    };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) window.location.href = "login.html";
+      else {
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          const now = new Date();
+          if (
+            !data.subscriptionExpiry ||
+            data.subscriptionExpiry.toDate() < now
+          ) {
+            if (window.blockPageWithSubscribe)
+              window.blockPageWithSubscribe();
+            else window.location.href = "payment.html";
+          }
+        } else {
+          if (window.blockPageWithSubscribe) window.blockPageWithSubscribe();
+          else window.location.href = "payment.html";
+        }
+      }
+    });
+  </script>
+</head>
+
+<body class="bg-slate-50 min-h-screen">
+  <div class="max-w-7xl mx-auto px-4 lg:px-10 py-2">
+    <a href="dashboard.html"
+      class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition text-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+  <div class="max-w-7xl mx-auto p-4 lg:p-10">
+    <header class="mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+      <h1 class="text-3xl font-extrabold text-slate-800">
+        Invoice<span class="text-blue-600">Master</span>
+      </h1>
+      <button onclick="downloadInvoice()"
+        class="hidden md:flex w-full md:w-auto bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition items-center justify-center gap-2">
+        <i class="fa-solid fa-cloud-arrow-down"></i> Download PDF
+      </button>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div class="lg:col-span-5 space-y-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-building text-blue-500"></i> Business
+            Details
+          </h2>
+          <div class="space-y-4">
+            <div class="flex items-center justify-center w-full">
+              <label
+                class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100">
+                <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                  <i class="fa-solid fa-image text-2xl text-slate-400 mb-2"></i>
+                  <p class="text-xs text-slate-500">Upload Logo</p>
+                </div>
+                <input type="file" id="logoInput" class="hidden" accept="image/*" onchange="handleLogo(this)" />
+              </label>
+            </div>
+            <div class="space-y-1">
+              <label for="bizName" class="text-xs font-bold text-slate-400 uppercase">Business Name</label>
+              <input type="text" id="bizName" placeholder="Business Name"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                oninput="updatePreview()" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label for="bizEmail" class="text-xs font-bold text-slate-400 uppercase">Email</label>
+                <input type="email" id="bizEmail" placeholder="Email"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                  oninput="updatePreview()" />
+              </div>
+              <div class="space-y-1">
+                <label for="bizPhone" class="text-xs font-bold text-slate-400 uppercase">Phone</label>
+                <input type="tel" id="bizPhone" placeholder="Phone"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                  oninput="updatePreview()" />
+              </div>
+            </div>
+
+            <div class="space-y-1">
+              <label for="bizAddr" class="text-xs font-bold text-slate-400 uppercase">Address / Location</label>
+              <input type="text" id="bizAddr" placeholder="Address / Location"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                oninput="updatePreview()" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label for="countrySelect" class="text-xs font-bold text-slate-400 uppercase">Country / Currency</label>
+                <select id="countrySelect"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400" onchange="
+                      updateCurrency();
+                      updatePreview();
+                    ">
+                  <option value="USD" data-symbol="$">USA (USD)</option>
+                  <option value="CAD" data-symbol="$">Canada (CAD)</option>
+                  <option value="GBP" data-symbol="£">UK (GBP)</option>
+                  <option value="EUR" data-symbol="€">Europe (EUR)</option>
+                  <option value="CHF" data-symbol="₣">Switzerland (CHF)</option>
+                  <option value="AUD" data-symbol="A$">Australia (AUD)</option>
+                  <option value="JPY" data-symbol="¥">Japan (JPY)</option>
+                  <option value="CNY" data-symbol="¥">China (CNY)</option>
+                  <option value="INR" data-symbol="₹">India (INR)</option>
+                  <option value="SGD" data-symbol="S$">Singapore (SGD)</option>
+                  <option value="HKD" data-symbol="HK$">Hong Kong (HKD)</option>
+                  <option value="MXN" data-symbol="$">Mexico (MXN)</option>
+                  <option value="BRL" data-symbol="R$">Brazil (BRL)</option>
+                  <option value="PKR" data-symbol="₨">Pakistan (PKR)</option>
+                  <option value="AED" data-symbol="د.إ">UAE (AED)</option>
+                  <option value="THB" data-symbol="฿">Thailand (THB)</option>
+                  <optgroup label="African Countries">
+                    <option value="EGP" data-symbol="E£">Egypt (EGP)</option>
+                    <option value="GHS" data-symbol="GH₵">Ghana (GHS)</option>
+                    <option value="NGN" data-symbol="₦">Nigeria (NGN)</option>
+                    <option value="ZAR" data-symbol="R">
+                      South Africa (ZAR)
+                    </option>
+                    <option value="KES" data-symbol="Sh">Kenya (KES)</option>
+                    <option value="TZS" data-symbol="Sh">Tanzania (TZS)</option>
+                    <option value="UGX" data-symbol="Sh">Uganda (UGX)</option>
+                    <option value="MAD" data-symbol="د.م.">
+                      Morocco (MAD)
+                    </option>
+                    <option value="TND" data-symbol="د.ت">Tunisia (TND)</option>
+                    <option value="DZD" data-symbol="د.ج">Algeria (DZD)</option>
+                    <option value="ETB" data-symbol="Br">Ethiopia (ETB)</option>
+                    <option value="BWP" data-symbol="P">Botswana (BWP)</option>
+                    <option value="ZMW" data-symbol="K">Zambia (ZMW)</option>
+                    <option value="ZWL" data-symbol="Z$">Zimbabwe (ZWL)</option>
+                    <option value="RWF" data-symbol="Fr">Rwanda (RWF)</option>
+                    <option value="SOS" data-symbol="Sh">Somalia (SOS)</option>
+                    <option value="SZL" data-symbol="E">Eswatini (SZL)</option>
+                    <option value="LSL" data-symbol="L">Lesotho (LSL)</option>
+                    <option value="MZN" data-symbol="MT">
+                      Mozambique (MZN)
+                    </option>
+                    <option value="AOA" data-symbol="Kz">Angola (AOA)</option>
+                  </optgroup>
+                </select>
+              </div>
+              <div class="space-y-1">
+                <label for="invNum" class="text-xs font-bold text-slate-400 uppercase">Invoice No.</label>
+                <input type="text" id="invNum" placeholder="Invoice #001"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                  oninput="updatePreview()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-calendar text-purple-500"></i> Invoice Date
+          </h2>
+          <div class="space-y-4">
+            <div class="space-y-1">
+              <label for="invoiceDate" class="text-xs font-bold text-slate-400 uppercase">Select Date</label>
+              <input type="date" id="invoiceDate"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400"
+                oninput="updatePreview()" />
+            </div>
+            <p class="text-xs text-slate-500">Official invoice issue date</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-user text-green-500"></i> Recipient
+          </h2>
+          <div class="grid grid-cols-1 gap-4">
+            <div class="space-y-1">
+              <label for="clientBizName" class="text-xs font-bold text-slate-400 uppercase">Client Business Name</label>
+              <input type="text" id="clientBizName" placeholder="Business Name"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl" oninput="updatePreview()" />
+            </div>
+            <div class="space-y-1">
+              <label for="clientName" class="text-xs font-bold text-slate-400 uppercase">Contact Person</label>
+              <input type="text" id="clientName" placeholder="Name"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl" oninput="updatePreview()" />
+            </div>
+            <div class="space-y-1">
+              <label for="clientAddr" class="text-xs font-bold text-slate-400 uppercase">Client Address</label>
+              <input type="text" id="clientAddr" placeholder="Address / Location"
+                class="w-full p-3 bg-slate-50 border-none rounded-xl" oninput="updatePreview()" />
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div class="space-y-1">
+                <label for="clientEmail" class="text-xs font-bold text-slate-400 uppercase">Client Email</label>
+                <input type="email" id="clientEmail" placeholder="Email"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl" oninput="updatePreview()" />
+              </div>
+              <div class="space-y-1">
+                <label for="clientPhone" class="text-xs font-bold text-slate-400 uppercase">Client Phone</label>
+                <input type="tel" id="clientPhone" placeholder="Phone"
+                  class="w-full p-3 bg-slate-50 border-none rounded-xl" oninput="updatePreview()" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h3 class="text-sm font-bold text-slate-500 uppercase mb-4">
+            Theme Color
+          </h3>
+          <div>
+            <label class="text-xs font-bold text-slate-400 uppercase">Color Slider</label>
+            <div class="mt-2">
+              <input type="range" min="0" max="360" value="220" class="color-slider w-full" id="colorSlider"
+                oninput="handleColorSlider(this.value)">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold mb-4">Items & Services</h2>
+          <!-- Column Headers -->
+          <div class="flex gap-2 mb-2 px-1">
+            <div class="flex-1 text-xs font-bold text-slate-400 uppercase">Item</div>
+            <div class="w-16 text-xs font-bold text-slate-400 uppercase text-center">Qty</div>
+            <div class="w-24 text-xs font-bold text-slate-400 uppercase text-right">Price</div>
+            <div class="w-6"></div> <!-- Spacer for delete button -->
+          </div>
+          <div id="itemsList" class="space-y-3 mb-4"></div>
+          <button onclick="addItem()"
+            class="w-full py-2 border-2 border-dashed border-slate-200 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition">
+            + Add Item
+          </button>
+
+          <div class="mt-6">
+            <label class="block text-sm font-bold text-slate-500 mb-2">Discount (%)</label>
+            <input type="number" id="discountInput" value="0" class="w-full p-3 bg-slate-50 border-none rounded-xl"
+              oninput="updatePreview()" />
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-note-sticky text-yellow-500"></i> Notes
+          </h2>
+          <div class="space-y-4">
+            <div class="space-y-1">
+              <label for="notesInput" class="text-xs font-bold text-slate-400 uppercase">Invoice Notes</label>
+              <textarea id="notesInput" placeholder="Add a note or message for your client..."
+                class="w-full p-3 bg-slate-50 border-none rounded-xl focus:ring-2 focus:ring-blue-400 resize-vertical min-h-24"
+                oninput="updatePreview()"></textarea>
+            </div>
+            <p class="text-xs text-slate-500">
+              Visible at invoice footer
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-7">
+        <div class="sticky top-10">
+          <!-- Mobile Download Button -->
+          <button onclick="downloadInvoice()"
+            class="md:hidden w-full bg-blue-600 text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-700 transition flex items-center justify-center gap-2 mb-4">
+            <i class="fa-solid fa-cloud-arrow-down"></i> Download PDF
+          </button>
+          <div class="preview-wrapper shadow-inner overflow-auto">
+            <div class="pdf-scale-container">
+              <div id="invoicePreview">
+                <div class="flex justify-between items-start mb-12">
+                  <div>
+                    <img id="prevLogo" src="" class="h-16 mb-4 object-contain hidden" />
+                    <h1 id="prevBizName" class="text-2xl font-black uppercase text-slate-800">
+                      Business Name
+                    </h1>
+                    <p id="prevBizContact" class="text-slate-500 text-sm whitespace-pre-line mt-1"></p>
+                  </div>
+                  <div class="text-right">
+                    <h2 id="accentText" class="text-5xl font-black text-blue-600 opacity-20 mb-2">
+                      INVOICE
+                    </h2>
+                    <p class="font-bold text-lg text-slate-700">
+                      # <span id="prevInvNum">001</span>
+                    </p>
+                    <p id="prevInvDate" class="text-slate-400 text-sm"></p>
+                  </div>
+                </div>
+
+                <div class="mb-10">
+                  <div id="accentBorder" class="border-l-4 border-blue-600 pl-4">
+                    <h3 class="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">
+                      Bill To
+                    </h3>
+                    <p id="prevClientBizName" class="font-bold text-slate-800"></p>
+                    <p id="prevClientAddr" class="text-slate-500 text-sm"></p>
+                  </div>
+                </div>
+
+                <table class="w-full mb-10">
+                  <thead>
+                    <tr id="accentBg" class="bg-blue-600 text-white">
+                      <th class="p-3 text-left text-sm rounded-l-lg">
+                        Description
+                      </th>
+                      <th class="p-3 text-center text-sm">Qty</th>
+                      <th class="p-3 text-right text-sm">Price</th>
+                      <th class="p-3 text-right text-sm rounded-r-lg">
+                        Total
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="prevItemsBody" class="text-sm"></tbody>
+                </table>
+
+                <div class="flex justify-end avoid-pagebreak">
+                  <div class="w-64 space-y-2">
+                    <div class="flex justify-between text-slate-500 text-sm">
+                      <span>Subtotal</span>
+                      <span id="prevSubtotal">0.00</span>
+                    </div>
+                    <div class="flex justify-between text-rose-500 text-sm">
+                      <span>Discount</span>
+                      <span id="prevDiscount">0.00</span>
+                    </div>
+                    <div id="accentBgLight"
+                      class="flex justify-between p-3 bg-blue-50 rounded-lg text-blue-600 font-bold text-lg">
+                      <span>Total</span>
+                      <span id="prevTotal">0.00</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-12 pt-6 border-t border-slate-100 avoid-pagebreak">
+                  <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">
+                    Notes
+                  </h4>
+                  <p id="prevNotes" class="text-sm text-slate-600 whitespace-pre-line"></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentColor = "#2563eb";
+    let currencySym = "$";
+
+    function handleLogo(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = document.getElementById("prevLogo");
+          img.src = e.target.result;
+          img.classList.remove("hidden");
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function updateCurrency() {
+      const select = document.getElementById("countrySelect");
+      currencySym =
+        select.options[select.selectedIndex].getAttribute("data-symbol");
+    }
+
+    function changeColor(hex) {
+      currentColor = hex;
+      document.getElementById("accentText").style.color = hex;
+      document.getElementById("accentBorder").style.borderColor = hex;
+      document.getElementById("accentBg").style.backgroundColor = hex;
+      document.getElementById("accentBgLight").style.backgroundColor =
+        hex + "15";
+      document.getElementById("accentBgLight").style.color = hex;
+      updatePreview();
+    }
+
+    function handleColorSlider(hue) {
+      const color = `hsl(${hue}, 75%, 45%)`;
+      currentColor = color;
+      document.getElementById("accentText").style.color = color;
+      document.getElementById("accentBorder").style.borderColor = color;
+      document.getElementById("accentBg").style.backgroundColor = color;
+      document.getElementById("accentBgLight").style.backgroundColor = `hsl(${hue}, 75%, 95%)`;
+      document.getElementById("accentBgLight").style.color = color;
+      updatePreview();
+    }
+
+    function addItem() {
+      const id = Date.now();
+      const html = `
+                <div id="row-${id}" class="flex gap-2 animate-in fade-in duration-300">
+                    <input type="text" placeholder="Item" class="flex-1 p-2 bg-slate-50 rounded-lg text-sm" oninput="updatePreview()">
+                    <input type="number" value="1" class="w-16 p-2 bg-slate-50 rounded-lg text-sm text-center" oninput="updatePreview()">
+                    <input type="number" placeholder="0" class="w-24 p-2 bg-slate-50 rounded-lg text-sm text-right" oninput="updatePreview()">
+                    <button onclick="document.getElementById('row-${id}').remove(); updatePreview();" class="text-slate-300 hover:text-rose-500"><i class="fa-solid fa-circle-xmark"></i></button>
+                </div>
+            `;
+      document
+        .getElementById("itemsList")
+        .insertAdjacentHTML("beforeend", html);
+      updatePreview();
+    }
+
+    function updatePreview() {
+      // Business Info
+      document.getElementById("prevBizName").innerText =
+        document.getElementById("bizName").value || "BUSINESS NAME";
+
+      const bizAddr = document.getElementById("bizAddr").value;
+      const bizEmail = document.getElementById("bizEmail").value;
+      const bizPhone = document.getElementById("bizPhone").value;
+      document.getElementById("prevBizContact").innerText = [
+        bizAddr,
+        bizEmail,
+        bizPhone,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      document.getElementById("prevInvNum").innerText =
+        document.getElementById("invNum").value || "001";
+
+      // Invoice Date
+      const invoiceDateInput = document.getElementById("invoiceDate").value;
+      let displayDate;
+      if (invoiceDateInput) {
+        const d = new Date(invoiceDateInput);
+        displayDate = d.toLocaleDateString();
+      } else {
+        displayDate = new Date().toLocaleDateString();
+      }
+      document.getElementById("prevInvDate").innerText = displayDate;
+
+      // Client Info
+      document.getElementById("prevClientBizName").innerText =
+        document.getElementById("clientBizName").value || "Client Name";
+
+      const clientName = document.getElementById("clientName").value;
+      const clientAddr = document.getElementById("clientAddr").value;
+      const clientEmail = document.getElementById("clientEmail").value;
+      const clientPhone = document.getElementById("clientPhone").value;
+
+      document.getElementById("prevClientAddr").innerText = [
+        clientName,
+        clientAddr,
+        clientEmail,
+        clientPhone,
+      ]
+        .filter(Boolean)
+        .join("\n");
+
+      // Items & Totals
+      let subtotal = 0;
+      let itemsHtml = "";
+
+      const rows = document.querySelectorAll('#itemsList div[id^="row-"]');
+      rows.forEach((row) => {
+        const inputs = row.querySelectorAll("input");
+        const name = inputs[0].value || "Item Description";
+        const qty = parseFloat(inputs[1].value) || 0;
+        const price = parseFloat(inputs[2].value) || 0;
+        const total = qty * price;
+        subtotal += total;
+
+        itemsHtml += `
+            <tr class="border-b border-slate-50">
+                <td class="p-3 font-medium">${name}</td>
+                <td class="p-3 text-center">${qty}</td>
+                <td class="p-3 text-right">${currencySym}${price.toFixed(2)}</td>
+                <td class="p-3 text-right font-bold">${currencySym}${total.toFixed(2)}</td>
+            </tr>`;
+      });
+
+      document.getElementById("prevItemsBody").innerHTML = itemsHtml;
+
+      const discountP =
+        parseFloat(document.getElementById("discountInput").value) || 0;
+      const discountVal = subtotal * (discountP / 100);
+
+      document.getElementById("prevSubtotal").innerText =
+        `${currencySym}${subtotal.toFixed(2)}`;
+      document.getElementById("prevDiscount").innerText =
+        `-${currencySym}${discountVal.toFixed(2)}`;
+      document.getElementById("prevTotal").innerText =
+        `${currencySym}${(subtotal - discountVal).toFixed(2)}`;
+      document.getElementById("prevNotes").innerText =
+        document.getElementById("notesInput").value;
+    }
+
+    function downloadInvoice() {
+      const element = document.getElementById("invoicePreview");
+      const invoiceNumber = document.getElementById("invNum").value || "001";
+
+      // 1. Setup PDF options
+      const opt = {
+        margin: 0,
+        filename: `Invoice_${invoiceNumber}.pdf`,
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: { 
+          scale: 3, // Higher scale for better clarity
+          useCORS: true, 
+          letterRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        },
+        jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+      };
+
+      // 2. Performance & Mobile Fix: 
+      // We temporarily remove the 'scaling' effect from the parent so the library captures full size
+      const container = document.querySelector('.pdf-scale-container');
+      const originalTransform = container.style.transform;
+      
+      // Force reset scale for the capture
+      container.style.transform = "none";
+
+      // 3. Execute capture
+      html2pdf().set(opt).from(element).save().then(() => {
+        // 4. Restore the scale so the user's view doesn't break after download
+        container.style.transform = originalTransform;
+      }).catch(err => {
+        console.error("PDF Error:", err);
+        container.style.transform = originalTransform;
+      });
+    }
+
+    // Init with one item
+    addItem();
+  </script>
+</body>
+
+</html>

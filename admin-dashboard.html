@@ -1,0 +1,767 @@
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Receiptlover</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <script type="text/javascript">
+    (function () {
+      emailjs.init({
+        publicKey: "e45KQ0oGjEiozhqt2",
+      });
+      console.log("[EmailJS] SDK Initialized");
+    })();
+  </script>
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+
+  <script src="email.js"></script>
+
+  <style>
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    .font-poppins {
+      font-family: "Poppins", sans-serif;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg,
+          #667eea 0%,
+          #764ba2 50%,
+          #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
+
+    .status-approved {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .status-rejected {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .slide-down {
+      animation: slideDown 0.3s ease-out;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 min-h-screen p-4 md:p-8">
+  <!-- Header -->
+  <div class="max-w-7xl mx-auto mb-8">
+    <div class="bg-white p-6 rounded-2xl shadow-lg border border-purple-100">
+      <div class="flex items-center justify-between flex-wrap gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-12 h-12 gradient-bg rounded-xl flex items-center justify-center text-white shadow-lg">
+            <i class="fa-solid fa-shield-halved text-xl"></i>
+          </div>
+          <div>
+            <h1 class="text-2xl font-black font-poppins gradient-text">
+              Admin Dashboard
+            </h1>
+            <p class="text-sm text-slate-500">
+              Manage manual payment approvals
+            </p>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="text-sm text-slate-600">
+            <i class="fa-solid fa-user-circle mr-1"></i>
+            <span id="adminEmail">Admin</span>
+          </span>
+          <button onclick="logout()"
+            class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition text-sm font-semibold">
+            <i class="fa-solid fa-sign-out-alt mr-1"></i> Logout
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto">
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <!-- Pending Payments -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-yellow-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="w-12 h-12 bg-yellow-100 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-clock text-2xl text-yellow-600"></i>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+        </div>
+        <p class="text-3xl font-black text-slate-800" id="pendingCount">0</p>
+        <p class="text-sm text-slate-500">Awaiting Approval</p>
+      </div>
+
+      <!-- Approved Payments -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-green-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-check-circle text-2xl text-green-600"></i>
+          </div>
+          <span class="status-badge status-approved">Approved</span>
+        </div>
+        <p class="text-3xl font-black text-slate-800" id="approvedCount">0</p>
+        <p class="text-sm text-slate-500">Approved Today</p>
+      </div>
+
+      <!-- Total Revenue -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg border-2 border-purple-200">
+        <div class="flex items-center justify-between mb-2">
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
+            <i class="fa-solid fa-money-bill-wave text-2xl text-purple-600"></i>
+          </div>
+          <span class="text-xs font-semibold text-purple-600">GHS</span>
+        </div>
+        <p class="text-3xl font-black text-slate-800" id="totalRevenue">0</p>
+        <p class="text-sm text-slate-500">Total Revenue</p>
+      </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="bg-white p-4 rounded-2xl shadow-lg border border-purple-100 mb-6">
+      <div class="flex gap-2 overflow-x-auto">
+        <button onclick="filterPayments('all')" id="filter-all"
+          class="filter-btn px-6 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap bg-purple-600 text-white">
+          <i class="fa-solid fa-list mr-1"></i> All
+        </button>
+        <button onclick="filterPayments('pending')" id="filter-pending"
+          class="filter-btn px-6 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <i class="fa-solid fa-clock mr-1"></i> Pending
+        </button>
+        <button onclick="filterPayments('approved')" id="filter-approved"
+          class="filter-btn px-6 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <i class="fa-solid fa-check-circle mr-1"></i> Approved
+        </button>
+        <button onclick="filterPayments('rejected')" id="filter-rejected"
+          class="filter-btn px-6 py-2 rounded-lg font-semibold text-sm transition whitespace-nowrap bg-slate-100 text-slate-600 hover:bg-slate-200">
+          <i class="fa-solid fa-times-circle mr-1"></i> Rejected
+        </button>
+      </div>
+    </div>
+
+    <!-- Payments List -->
+    <div class="bg-white rounded-2xl shadow-lg border border-purple-100 overflow-hidden">
+      <div class="p-6 border-b border-slate-200">
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-file-invoice-dollar text-purple-600"></i>
+          Payment Submissions
+        </h2>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingState" class="p-8 text-center">
+        <i class="fa-solid fa-spinner fa-spin text-4xl text-purple-600 mb-3"></i>
+        <p class="text-slate-500">Loading payments...</p>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="hidden p-8 text-center">
+        <i class="fa-solid fa-inbox text-6xl text-slate-300 mb-3"></i>
+        <p class="text-slate-500">No payments found</p>
+      </div>
+
+      <!-- Payments Container -->
+      <div id="paymentsContainer" class="hidden divide-y divide-slate-200">
+        <!-- Payment items will be inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 slide-down">
+      <div class="text-center mb-6">
+        <div id="modalIcon" class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center">
+          <i class="text-3xl"></i>
+        </div>
+        <h3 id="modalTitle" class="text-xl font-bold text-slate-800 mb-2"></h3>
+        <p id="modalMessage" class="text-slate-600"></p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="closeModal()"
+          class="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300 transition">
+          Cancel
+        </button>
+        <button id="confirmBtn" onclick="executeAction()"
+          class="flex-1 px-6 py-3 rounded-xl font-semibold text-white transition">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Period Modal -->
+  <div id="editPeriodModal"
+    class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 slide-down">
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+          <i class="fa-solid fa-calendar text-3xl text-blue-600"></i>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">
+          Edit Subscription Period
+        </h3>
+        <p class="text-slate-600">
+          Change the subscription duration for this user
+        </p>
+      </div>
+
+      <div class="mb-6">
+        <label class="block text-sm font-semibold text-slate-600 mb-3">Number of Months</label>
+        <div id="editMonthSelector" class="grid grid-cols-4 gap-2 mb-4"></div>
+        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
+          <p class="text-xs text-slate-600 mb-2">New Amount:</p>
+          <p class="text-2xl font-black text-purple-600">
+            GHS <span id="editPeriodAmount">20</span>
+          </p>
+          <p class="text-xs text-slate-600 mt-2">
+            (<span id="editMonthsDisplay">1</span> month × GHS 20)
+          </p>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="closeEditPeriodModal()"
+          class="flex-1 px-6 py-3 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300 transition">
+          Cancel
+        </button>
+        <button onclick="saveEditPeriod()"
+          class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition">
+          <i class="fa-solid fa-save mr-1"></i> Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnN7AODVubqLmnOniyjQkSWGvBJJ2kMQU",
+      authDomain: "invoiceapp-3fe51.firebaseapp.com",
+      projectId: "invoiceapp-3fe51",
+      storageBucket: "invoiceapp-3fe51.firebasestorage.app",
+      messagingSenderId: "178955208220",
+      appId: "1:178955208220:web:128a713add6c992f9981d9",
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    let currentUser = null;
+    let allPayments = [];
+    let currentFilter = "all";
+    let pendingAction = null;
+
+    // Admin email whitelist - UPDATE THIS WITH YOUR ADMIN EMAIL(S)
+    const ADMIN_EMAILS = ["emmanuelfiati32@gmail.com"];
+
+    // Check authentication and admin access
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        // Check if user is admin
+        if (!ADMIN_EMAILS.includes(user.email)) {
+          alert("Access denied. Admin privileges required.");
+          window.location.href = "dashboard.html";
+          return;
+        }
+
+        currentUser = user;
+        document.getElementById("adminEmail").textContent = user.email;
+
+        // Load payments
+        loadPayments();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+
+    // Load all payments
+    function loadPayments() {
+      const paymentsRef = db
+        .collection("manual_payments")
+        .orderBy("submittedAt", "desc");
+
+      paymentsRef.onSnapshot(
+        (snapshot) => {
+          allPayments = [];
+          snapshot.forEach((doc) => {
+            allPayments.push({ id: doc.id, ...doc.data() });
+          });
+
+          updateStats();
+          renderPayments();
+        },
+        (error) => {
+          console.error("Error loading payments:", error);
+          document.getElementById("loadingState").innerHTML =
+            '<div class="text-red-600"><i class="fa-solid fa-exclamation-triangle mb-2"></i><p>Error loading payments</p></div>';
+        },
+      );
+    }
+
+    // Update statistics
+    function updateStats() {
+      const pending = allPayments.filter(
+        (p) => p.status === "pending",
+      ).length;
+      const approved = allPayments.filter(
+        (p) => p.status === "approved",
+      ).length;
+      const totalRev = allPayments
+        .filter((p) => p.status === "approved")
+        .reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      document.getElementById("pendingCount").textContent = pending;
+      document.getElementById("approvedCount").textContent = approved;
+      document.getElementById("totalRevenue").textContent = totalRev;
+    }
+
+    // Render payments based on current filter
+    function renderPayments() {
+      const container = document.getElementById("paymentsContainer");
+      const loadingState = document.getElementById("loadingState");
+      const emptyState = document.getElementById("emptyState");
+
+      // Filter payments
+      let filteredPayments = allPayments;
+      if (currentFilter !== "all") {
+        filteredPayments = allPayments.filter(
+          (p) => p.status === currentFilter,
+        );
+      }
+
+      // Hide loading
+      loadingState.classList.add("hidden");
+
+      // Check if empty
+      if (filteredPayments.length === 0) {
+        container.classList.add("hidden");
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      // Show payments
+      emptyState.classList.add("hidden");
+      container.classList.remove("hidden");
+
+      // Render payment cards
+      container.innerHTML = filteredPayments
+        .map((payment) => {
+          const submittedDate = payment.submittedAt
+            ? new Date(payment.submittedAt.toDate()).toLocaleString()
+            : "N/A";
+
+          const statusClass = `status-${payment.status}`;
+          const statusIcon =
+            payment.status === "pending"
+              ? "clock"
+              : payment.status === "approved"
+                ? "check-circle"
+                : "times-circle";
+
+          return `
+          <div class="p-6 hover:bg-slate-50 transition">
+            <div class="flex items-start justify-between flex-wrap gap-4">
+              <!-- Payment Details -->
+              <div class="flex-1 min-w-[200px]">
+                <div class="flex items-center gap-2 mb-3">
+                  <span class="status-badge ${statusClass}">
+                    <i class="fa-solid fa-${statusIcon}"></i>
+                    ${payment.status.toUpperCase()}
+                  </span>
+                  <span class="text-xs text-slate-400">${submittedDate}</span>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <p class="text-xs text-slate-500 mb-1">Customer Email</p>
+                    <p class="text-sm font-semibold text-slate-800">${payment.userEmail || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 mb-1">Phone Number</p>
+                    <p class="text-sm font-semibold text-slate-800">${payment.userPhone || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 mb-1">Transaction ID</p>
+                    <p class="text-sm font-semibold text-slate-800">${payment.transactionId || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 mb-1">Reference Code</p>
+                    <p class="text-sm font-semibold text-purple-600">${payment.referenceCode || "N/A"}</p>
+                  </div>
+                  <div>
+                    <p class="text-xs text-slate-500 mb-1">Subscription Period</p>
+                    <p class="text-sm font-semibold text-blue-600">${payment.months || 1} month${payment.months > 1 ? "s" : ""}</p>
+                  </div>
+                </div>
+
+                <div class="flex items-center gap-4">
+                  <div class="px-3 py-1 bg-green-100 rounded-lg">
+                    <p class="text-sm font-black text-green-700">GHS ${payment.amount || 0}</p>
+                  </div>
+                  ${payment.approvedAt
+              ? `
+                    <p class="text-xs text-slate-500">
+                      <i class="fa-solid fa-check mr-1"></i>
+                      Approved ${new Date(payment.approvedAt.toDate()).toLocaleDateString()}
+                    </p>
+                  `
+              : ""
+            }
+                </div>
+              </div>
+
+              <!-- Actions -->
+              ${payment.status === "pending"
+              ? `
+                <div class="flex gap-2 flex-wrap">
+                  <button onclick="showConfirmModal('${payment.id}', 'approve')" 
+                    class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm font-semibold">
+                    <i class="fa-solid fa-check mr-1"></i> Approve
+                  </button>
+                  <button onclick="showConfirmModal('${payment.id}', 'reject')" 
+                    class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-semibold">
+                    <i class="fa-solid fa-times mr-1"></i> Reject
+                  </button>
+                </div>
+              `
+              : payment.status === "approved"
+                ? `
+                <div class="flex gap-2">
+                  <button onclick="openEditPeriodModal('${payment.id}', ${payment.months || 1})"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
+                    <i class="fa-solid fa-calendar mr-1"></i> Edit Period
+                  </button>
+                </div>
+              `
+                : ""
+            }
+            </div>
+          </div>
+        `;
+        })
+        .join("");
+    }
+
+    // Filter payments
+    function filterPayments(filter) {
+      currentFilter = filter;
+
+      // Update button styles
+      document.querySelectorAll(".filter-btn").forEach((btn) => {
+        btn.classList.remove("bg-purple-600", "text-white");
+        btn.classList.add(
+          "bg-slate-100",
+          "text-slate-600",
+          "hover:bg-slate-200",
+        );
+      });
+      document
+        .getElementById(`filter-${filter}`)
+        .classList.remove(
+          "bg-slate-100",
+          "text-slate-600",
+          "hover:bg-slate-200",
+        );
+      document
+        .getElementById(`filter-${filter}`)
+        .classList.add("bg-purple-600", "text-white");
+
+      renderPayments();
+    }
+
+    // Show confirmation modal
+    function showConfirmModal(paymentId, action) {
+      pendingAction = { paymentId, action };
+
+      const modal = document.getElementById("confirmModal");
+      const modalIcon = document.getElementById("modalIcon");
+      const modalTitle = document.getElementById("modalTitle");
+      const modalMessage = document.getElementById("modalMessage");
+      const confirmBtn = document.getElementById("confirmBtn");
+
+      if (action === "approve") {
+        modalIcon.className =
+          "w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-green-100";
+        modalIcon.querySelector("i").className =
+          "text-3xl fa-solid fa-check-circle text-green-600";
+        modalTitle.textContent = "Approve Payment?";
+        modalMessage.textContent =
+          "This will activate the user's subscription.";
+        confirmBtn.className =
+          "flex-1 px-6 py-3 rounded-xl font-semibold text-white transition bg-green-600 hover:bg-green-700";
+        confirmBtn.textContent = "Approve";
+      } else {
+        modalIcon.className =
+          "w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-red-100";
+        modalIcon.querySelector("i").className =
+          "text-3xl fa-solid fa-times-circle text-red-600";
+        modalTitle.textContent = "Reject Payment?";
+        modalMessage.textContent =
+          "The user will be notified of the rejection.";
+        confirmBtn.className =
+          "flex-1 px-6 py-3 rounded-xl font-semibold text-white transition bg-red-600 hover:bg-red-700";
+        confirmBtn.textContent = "Reject";
+      }
+
+      modal.classList.remove("hidden");
+    }
+
+    // Close modal
+    function closeModal() {
+      document.getElementById("confirmModal").classList.add("hidden");
+      pendingAction = null;
+    }
+
+    // Execute approved/rejected action
+    async function executeAction() {
+      if (!pendingAction) return;
+
+      const { paymentId, action } = pendingAction;
+      const confirmBtn = document.getElementById("confirmBtn");
+      const originalText = confirmBtn.textContent;
+
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+
+      try {
+        const payment = allPayments.find((p) => p.id === paymentId);
+        if (!payment) throw new Error("Payment not found");
+
+        // Update payment status
+        await db
+          .collection("manual_payments")
+          .doc(paymentId)
+          .update({
+            status: action === "approve" ? "approved" : "rejected",
+            approvedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            approvedBy: currentUser.email,
+          });
+
+        // If approved, activate user subscription
+        if (action === "approve") {
+          // Fetch current user subscription expiry
+          const userDoc = await db
+            .collection("users")
+            .doc(payment.userId)
+            .get();
+          let currentExpiry = null;
+          if (userDoc.exists && userDoc.data().subscriptionExpiry) {
+            const expiryValue = userDoc.data().subscriptionExpiry;
+            // Firestore Timestamp or JS Date
+            if (expiryValue.toDate) {
+              currentExpiry = expiryValue.toDate();
+            } else {
+              currentExpiry = new Date(expiryValue);
+            }
+          }
+          const now = new Date();
+          let baseDate = now;
+          if (currentExpiry && currentExpiry > now) {
+            baseDate = currentExpiry;
+          }
+          const monthsToAdd = payment.months || 1;
+          baseDate.setMonth(baseDate.getMonth() + monthsToAdd);
+
+          await db
+            .collection("users")
+            .doc(payment.userId)
+            .update({
+              subscriptionStatus: "active",
+              subscriptionExpiry: baseDate,
+              lastPaymentRef: paymentId,
+              subscriptionMonths:
+                (userDoc.exists && userDoc.data().subscriptionMonths
+                  ? userDoc.data().subscriptionMonths
+                  : 0) + monthsToAdd,
+              lastPaymentAmount: payment.amount,
+            });
+
+          // Send approval email
+          const userEmail =
+            payment.userEmail || (userDoc.exists ? userDoc.data().email : "");
+          const firstName = userDoc.exists ? userDoc.data().firstName : "";
+          console.log(
+            "[Approval Email] About to send email to:",
+            userEmail,
+            "First name:",
+            firstName,
+          );
+          if (window.sendApprovalEmail) {
+            window.sendApprovalEmail(userEmail, firstName);
+            console.log("[Approval Email] sendApprovalEmail called");
+          } else {
+            console.warn(
+              "[Approval Email] sendApprovalEmail function not found on window",
+            );
+          }
+        }
+
+        closeModal();
+      } catch (error) {
+        console.error("Error processing payment:", error);
+        alert("Error processing payment: " + error.message);
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+      }
+    }
+
+    // Logout
+    function logout() {
+      auth.signOut().then(() => {
+        window.location.href = "login.html";
+      });
+    }
+
+    // Edit period modal
+    let editingPaymentId = null;
+    let editingMonths = 1;
+    const PRICE_PER_MONTH = 20;
+    const MAX_MONTHS = 12;
+
+    function openEditPeriodModal(paymentId, currentMonths) {
+      editingPaymentId = paymentId;
+      editingMonths = currentMonths;
+
+      const modal = document.getElementById("editPeriodModal");
+      const monthSelector = document.getElementById("editMonthSelector");
+
+      // Create month buttons
+      monthSelector.innerHTML = "";
+      for (let i = 1; i <= MAX_MONTHS; i++) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = `px-3 py-2 rounded-lg border-2 transition font-semibold ${i === currentMonths
+          ? "bg-blue-600 text-white border-blue-600"
+          : "border-slate-200 text-slate-600 hover:border-blue-600"
+          }`;
+        btn.textContent = i;
+        btn.onclick = () => selectEditMonths(i);
+        monthSelector.appendChild(btn);
+      }
+
+      selectEditMonths(currentMonths);
+      modal.classList.remove("hidden");
+    }
+
+    function closeEditPeriodModal() {
+      document.getElementById("editPeriodModal").classList.add("hidden");
+      editingPaymentId = null;
+    }
+
+    function selectEditMonths(months) {
+      editingMonths = months;
+      document.getElementById("editPeriodAmount").textContent =
+        months * PRICE_PER_MONTH;
+      document.getElementById("editMonthsDisplay").textContent = months;
+
+      // Update button styles
+      document
+        .querySelectorAll("#editMonthSelector button")
+        .forEach((btn, idx) => {
+          if (idx + 1 === months) {
+            btn.className =
+              "px-3 py-2 rounded-lg border-2 transition font-semibold bg-blue-600 text-white border-blue-600";
+          } else {
+            btn.className =
+              "px-3 py-2 rounded-lg border-2 transition font-semibold border-slate-200 text-slate-600 hover:border-blue-600";
+          }
+        });
+    }
+
+    async function saveEditPeriod() {
+      if (!editingPaymentId) return;
+
+      const saveBtn = event.target;
+      const originalText = saveBtn.textContent;
+      saveBtn.disabled = true;
+      saveBtn.innerHTML =
+        '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Saving...';
+
+      try {
+        const payment = allPayments.find((p) => p.id === editingPaymentId);
+        if (!payment) throw new Error("Payment not found");
+
+        const newAmount = editingMonths * PRICE_PER_MONTH;
+
+        // Update payment with new months
+        await db.collection("manual_payments").doc(editingPaymentId).update({
+          months: editingMonths,
+          amount: newAmount,
+        });
+
+        // Update user subscription with new expiry
+        const expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + editingMonths);
+
+        await db.collection("users").doc(payment.userId).update({
+          subscriptionStatus: "active",
+          subscriptionExpiry: expiryDate,
+          subscriptionMonths: editingMonths,
+          lastPaymentAmount: newAmount,
+        });
+
+        closeEditPeriodModal();
+        loadPayments();
+      } catch (error) {
+        console.error("Error updating subscription:", error);
+        alert("Error updating subscription: " + error.message);
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalText;
+      }
+    }
+  </script>
+</body>
+
+</html>

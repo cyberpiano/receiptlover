@@ -1,0 +1,517 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>One-Page Receipt Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Firebase Auth Protection -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="trial.js"></script>
+  <script>
+    // REPLACE WITH YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyDnN7AODVubqLmnOniyjQkSWGvBJJ2kMQU",
+      authDomain: "invoiceapp-3fe51.firebaseapp.com",
+      projectId: "invoiceapp-3fe51",
+      storageBucket: "invoiceapp-3fe51.firebasestorage.app",
+      messagingSenderId: "178955208220",
+      appId: "1:178955208220:web:128a713add6c992f9981d9",
+    };
+
+    // Initialize (prevent re-init error if multiple scripts use it, though here it's standalone page)
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        // Not logged in -> Redirect to Login
+        window.location.href = "login.html";
+      } else {
+        // Logged in -> Check Subscription
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          const now = new Date();
+
+          // Check if expiry date exists and is in the future
+          if (
+            !data.subscriptionExpiry ||
+            data.subscriptionExpiry.toDate() < now
+          ) {
+            // Expired -> show subscribe modal instead of immediate redirect
+            if (window.blockPageWithSubscribe)
+              window.blockPageWithSubscribe();
+            else window.location.href = "payment.html";
+          }
+          // Otherwise, access granted.
+        } else {
+          if (window.blockPageWithSubscribe) window.blockPageWithSubscribe();
+          else window.location.href = "payment.html";
+        }
+      }
+    });
+  </script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Courier+Prime&display=swap");
+
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    .receipt-font {
+      font-family: "Courier Prime", monospace;
+    }
+
+    /* Responsive Preview Area */
+    .preview-area {
+      background: #cbd5e1;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 50vh;
+    }
+
+    /* Receipt Styling - Now Responsive */
+    #receiptCard {
+      width: 100%;
+      max-width: 380px;
+      /* Limit size on desktop */
+      background: white;
+      padding: 25px;
+      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+      position: relative;
+      page-break-inside: avoid;
+    }
+
+    .zig-zag {
+      position: absolute;
+      bottom: -10px;
+      left: 0;
+      width: 100%;
+      height: 10px;
+      background: linear-gradient(-45deg, transparent 5px, white 5px), linear-gradient(45deg, transparent 5px, white 5px);
+      background-size: 10px 10px;
+    }
+
+    /* Label styling */
+    .input-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      color: #64748b;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* Professional Color Spectrum Slider */
+    .color-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 12px;
+      border-radius: 6px;
+      /* The background is the actual rainbow spectrum */
+      background: linear-gradient(to right,
+          #ff0000 0%, #ffff00 17%, #00ff00 33%,
+          #00ffff 50%, #0000ff 67%, #ff00ff 83%, #ff0000 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Styling the 'thumb' (the part you grab) */
+    .color-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: white;
+      border: 3px solid #ffffff;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      cursor: grab;
+    }
+
+    .color-slider::-webkit-slider-thumb:active {
+      cursor: grabbing;
+      transform: scale(1.1);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50">
+  <div class="max-w-7xl mx-auto px-4 py-4">
+    <a href="dashboard.html"
+      class="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 font-bold transition text-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Dashboard
+    </a>
+  </div>
+
+  <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
+    <div class="lg:col-span-5 p-5 md:p-10 bg-white border-r border-slate-200 space-y-8">
+      <div>
+        <h1 class="text-2xl font-black text-slate-800">Receipt<span class="text-emerald-500">Fast</span></h1>
+        <p class="text-sm text-slate-500">Professional receipts made easy.</p>
+      </div>
+
+      <div class="space-y-6">
+        <div class="space-y-4">
+          <div class="flex items-center justify-center w-full">
+            <label
+              class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-slate-50 hover:bg-slate-100 transition">
+              <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                <i class="fa-solid fa-image text-2xl text-slate-400 mb-2"></i>
+                <p class="text-xs text-slate-500">Upload Business Logo</p>
+              </div>
+              <input type="file" id="logoInput" class="hidden" accept="image/*" onchange="handleLogo(this)" />
+            </label>
+          </div>
+          <div>
+            <label class="input-label">Business Name</label>
+            <input type="text" id="bizName" placeholder="Enter Business Name"
+              class="w-full p-3 border rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
+              oninput="update()" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="input-label">Receipt No.</label>
+            <input type="text" id="rNo" placeholder="#001" class="w-full p-3 border rounded-xl outline-none"
+              oninput="update()" />
+          </div>
+          <div>
+            <label class="input-label">Currency</label>
+            <select id="currency" class="w-full p-3 border rounded-xl bg-slate-50 outline-none" onchange="update()">
+              <optgroup label="Popular">
+                <option value="GH₵" data-symbol="GH₵">Ghana (GHS)</option>
+                <option value="₦" data-symbol="₦">Nigeria (NGN)</option>
+                <option value="$" data-symbol="$">USA (USD)</option>
+                <option value="£" data-symbol="£">UK (GBP)</option>
+                <option value="€" data-symbol="€">Europe (EUR)</option>
+              </optgroup>
+              <optgroup label="Africa">
+                <option value="KSh" data-symbol="KSh">Kenya (KES)</option>
+                <option value="R" data-symbol="R">South Africa (ZAR)</option>
+                <option value="USh" data-symbol="USh">Uganda (UGX)</option>
+                <option value="TSh" data-symbol="TSh">Tanzania (TZS)</option>
+                <option value="ZK" data-symbol="ZK">Zambia (ZMW)</option>
+                <option value="RWFr" data-symbol="RWFr">Rwanda (RWF)</option>
+                <option value="E£" data-symbol="E£">Egypt (EGP)</option>
+                <option value="MAD" data-symbol="MAD">Morocco (MAD)</option>
+                <option value="CFA" data-symbol="CFA">West Africa (CFA)</option>
+                <option value="Br" data-symbol="Br">Ethiopia (ETB)</option>
+                <option value="D" data-symbol="D">Gambia (GMD)</option>
+                <option value="Le" data-symbol="Le">Sierra Leone (SLL)</option>
+                <option value="P" data-symbol="P">Botswana (BWP)</option>
+                <option value="N$" data-symbol="N$">Namibia (NAD)</option>
+                <option value="MT" data-symbol="MT">Mozambique (MZN)</option>
+              </optgroup>
+              <optgroup label="Americas">
+                <option value="C$" data-symbol="C$">Canada (CAD)</option>
+                <option value="MX$" data-symbol="MX$">Mexico (MXN)</option>
+                <option value="R$" data-symbol="R$">Brazil (BRL)</option>
+                <option value="AR$" data-symbol="AR$">Argentina (ARS)</option>
+              </optgroup>
+              <optgroup label="Asia & Oceania">
+                <option value="¥" data-symbol="¥">China (CNY)</option>
+                <option value="¥" data-symbol="¥">Japan (JPY)</option>
+                <option value="₹" data-symbol="₹">India (INR)</option>
+                <option value="S$" data-symbol="S$">Singapore (SGD)</option>
+                <option value="A$" data-symbol="A$">Australia (AUD)</option>
+                <option value="NZ$" data-symbol="NZ$">New Zealand (NZD)</option>
+                <option value="HK$" data-symbol="HK$">Hong Kong (HKD)</option>
+                <option value="₱" data-symbol="₱">Philippines (PHP)</option>
+              </optgroup>
+              <optgroup label="Middle East">
+                <option value="د.إ" data-symbol="د.إ">UAE (AED)</option>
+                <option value="ر.س" data-symbol="ر.س">Saudi Arabia (SAR)</option>
+                <option value="₪" data-symbol="₪">Israel (ILS)</option>
+                <option value="KD" data-symbol="KD">Kuwait (KWD)</option>
+                <option value="QR" data-symbol="QR">Qatar (QAR)</option>
+              </optgroup>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="input-label">Customer Name</label>
+          <input type="text" id="cust" placeholder="Client Name" class="w-full p-3 border rounded-xl outline-none"
+            oninput="update()" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label class="input-label">Payment Method</label>
+            <select id="method" class="w-full p-3 border rounded-xl bg-slate-50 outline-none" onchange="update()">
+              <option value="CASH">CASH</option>
+              <option value="BANK TRANSFER">BANK TRANSFER</option>
+              <option value="CARD">DEBIT/CREDIT CARD</option>
+              <option value="MOBILE MONEY">MOBILE MONEY</option>
+            </select>
+          </div>
+          <div>
+            <label class="input-label">Transaction Date</label>
+            <input type="date" id="rDate" class="w-full p-3 border rounded-xl text-slate-500 outline-none"
+              oninput="update()" />
+          </div>
+        </div>
+
+        <div>
+          <label class="input-label">Theme Color Slider</label>
+          <div class="relative flex items-center h-10">
+            <input type="range" min="0" max="360" value="160" class="color-slider" id="colorPicker"
+              oninput="handleColorSlider(this.value)">
+          </div>
+        </div>
+
+        <div>
+          <label class="input-label">Items & Services</label>
+          <div id="itemsList" class="space-y-2 mb-2"></div>
+          <button onclick="addItem()"
+            class="text-sm font-bold text-emerald-600 flex items-center gap-1 hover:underline">
+            <i class="fa-solid fa-plus-circle"></i> Add Item
+          </button>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="input-label">Discount %</label>
+            <input type="number" id="disc" placeholder="0" class="w-full p-3 border rounded-xl outline-none"
+              oninput="update()" />
+          </div>
+          <div>
+            <label class="input-label">Note</label>
+            <input type="text" id="note" placeholder="Thank you!" class="w-full p-3 border rounded-xl outline-none"
+              oninput="update()" />
+          </div>
+        </div>
+
+        <button onclick="download()"
+          class="w-full bg-slate-900 text-white font-bold py-4 rounded-2xl flex items-center justify-center gap-2 hover:bg-black transition shadow-lg">
+          <i class="fa-solid fa-file-pdf"></i> Download Receipt
+        </button>
+      </div>
+    </div>
+
+    <div class="lg:col-span-7 preview-area border-t lg:border-t-0">
+      <div id="receiptCard" class="receipt-font">
+        <div class="text-center mb-6">
+          <img id="pLogo" src="" class="h-12 mx-auto mb-2 hidden object-contain" />
+          <h2 id="pBizName" class="text-xl font-bold uppercase break-words">Business Name</h2>
+          <div class="w-full border-b border-double border-slate-300 my-2"></div>
+          <p class="text-[10px] tracking-[0.2em] text-slate-400 font-sans uppercase">Transaction Receipt</p>
+        </div>
+
+        <div class="text-xs space-y-1 mb-6">
+          <div class="flex justify-between"><span>No:</span><span id="pNo" class="font-bold">#---</span></div>
+          <div class="flex justify-between"><span>Date:</span><span id="pDate">---</span></div>
+          <div class="flex justify-between"><span>Customer:</span><span id="pCust" class="font-bold">Walk-in</span>
+          </div>
+        </div>
+
+        <div class="text-sm mb-4 border-t border-b border-black py-2">
+          <div class="flex justify-between font-bold mb-2">
+            <span>Item</span>
+            <span>Price</span>
+          </div>
+          <div id="pItems" class="space-y-1"></div>
+        </div>
+
+        <div class="text-sm space-y-1 mb-6">
+          <div class="flex justify-between"><span>Subtotal:</span><span id="pSub">0.00</span></div>
+          <div class="flex justify-between text-slate-400"><span>Discount:</span><span id="pDisc">0.00</span></div>
+          <div id="accentText" class="flex justify-between text-xl font-bold text-emerald-600 pt-2">
+            <span>TOTAL:</span><span id="pTotal">0.00</span>
+          </div>
+        </div>
+
+        <div class="text-center space-y-4">
+          <div class="text-[10px] bg-slate-100 py-1 font-sans rounded">PAID VIA: <span id="pMethod">CASH</span></div>
+          <p id="pNote" class="text-xs italic text-slate-500 break-words">Thank you for your business!</p>
+          <div class="pt-4 flex flex-col items-center opacity-70">
+            <div class="barcode-container flex gap-[1px] h-8">
+              <div class="w-[2px] bg-black h-full"></div>
+              <div class="w-[1px] bg-black h-full"></div>
+              <div class="w-[3px] bg-black h-full"></div>
+              <div class="w-[1px] bg-black h-full"></div>
+              <div class="w-[2px] bg-black h-full"></div>
+              <div class="w-[4px] bg-black h-full"></div>
+              <div class="w-[1px] bg-black h-full"></div>
+              <div class="w-[2px] bg-black h-full"></div>
+              <div class="w-[1px] bg-black h-full"></div>
+              <div class="w-[3px] bg-black h-full"></div>
+              <div class="w-[2px] bg-black h-full"></div>
+            </div>
+            <span class="text-[8px] tracking-[0.5em] mt-1">VERIFIED TRANSACTION</span>
+          </div>
+        </div>
+        <div class="zig-zag"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 3. Helper: Load Local Cache
+    function loadLocalCache() {
+      const savedData = localStorage.getItem("activeReceipt");
+      if (savedData) {
+        const data = JSON.parse(savedData);
+        document.getElementById("rNo").value = data.rNo || "";
+        document.getElementById("cust").value = data.cust || "";
+        document.getElementById("rDate").value = data.rDate || "";
+        document.getElementById("method").value = data.method || "CASH";
+        document.getElementById("disc").value = data.disc || "0";
+        document.getElementById("note").value = data.note || "";
+
+        if (data.items && data.items.length > 0) {
+          document.getElementById("itemsList").innerHTML = "";
+          data.items.forEach(item => addItem(item.name, item.price));
+        } else {
+          addItem();
+        }
+      } else {
+        addItem();
+      }
+    }
+
+    // 4. Auto-Save Logic (Cloud)
+    async function saveProfile() {
+      clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(async () => {
+        const user = auth.currentUser;
+        if (!user) return;
+        const profileUpdates = {
+          bizName: document.getElementById("bizName").value,
+          currency: document.getElementById("currency").value,
+          logoUrl: document.getElementById("pLogo").src
+        };
+        await db.collection("users").doc(user.uid).set({ businessProfile: profileUpdates }, { merge: true });
+      }, 2000);
+    }
+
+    // 5. Handlers
+    function handleLogo(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const img = document.getElementById("pLogo");
+          img.src = e.target.result;
+          img.classList.remove("hidden");
+          saveProfile();
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function handleColorSlider(hue) {
+      const color = `hsl(${hue}, 70%, 45%)`;
+      const accent = document.getElementById("accentText");
+      if (accent) accent.style.color = color;
+      saveProfile();
+    }
+
+    function addItem(name = "", price = "") {
+      const id = Date.now() + Math.random();
+      const html = `
+    <div id="item-${id}" class="flex gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+        <input type="text" placeholder="Item name" value="${name}" class="flex-1 p-2 bg-transparent text-sm item-name outline-none" oninput="update()">
+        <input type="number" placeholder="0.00" value="${price}" class="w-20 p-2 bg-transparent text-sm text-right item-price outline-none" oninput="update()">
+        <button onclick="document.getElementById('item-${id}').remove(); update();" class="text-rose-400 px-2"><i class="fa-solid fa-trash"></i></button>
+    </div>`;
+      document.getElementById("itemsList").insertAdjacentHTML("beforeend", html);
+    }
+
+    // 6. Core Update Function
+    function update() {
+      const select = document.getElementById("currency");
+      const sym = select.options[select.selectedIndex].getAttribute("data-symbol") || "$";
+
+      document.getElementById("pBizName").innerText = document.getElementById("bizName").value || "Business Name";
+      document.getElementById("pNo").innerText = document.getElementById("rNo").value || "#000";
+
+      const dateInput = document.getElementById("rDate").value;
+      document.getElementById("pDate").innerText = dateInput ? new Date(dateInput).toLocaleDateString() : new Date().toLocaleDateString();
+
+      document.getElementById("pCust").innerText = document.getElementById("cust").value || "Walk-in Customer";
+      document.getElementById("pMethod").innerText = document.getElementById("method").value;
+      document.getElementById("pNote").innerText = document.getElementById("note").value || "Thank you for your business!";
+
+      let sub = 0;
+      let itemsArray = [];
+      let listHtml = "";
+
+      document.querySelectorAll("#itemsList > div").forEach((div) => {
+        const nameInp = div.querySelector(".item-name");
+        const priceInp = div.querySelector(".item-price");
+        const name = nameInp ? nameInp.value : "";
+        const price = priceInp ? parseFloat(priceInp.value) || 0 : 0;
+
+        sub += price;
+        itemsArray.push({ name, price });
+        listHtml += `<div class="flex justify-between"><span>${name || 'General Item'}</span><span>${sym}${price.toFixed(2)}</span></div>`;
+      });
+
+      const dPercent = parseFloat(document.getElementById("disc").value) || 0;
+      const dVal = sub * (dPercent / 100);
+
+      document.getElementById("pItems").innerHTML = listHtml;
+      document.getElementById("pSub").innerText = `${sym}${sub.toFixed(2)}`;
+      document.getElementById("pDisc").innerText = `-${sym}${dVal.toFixed(2)}`;
+      document.getElementById("pTotal").innerText = `${sym}${(sub - dVal).toFixed(2)}`;
+
+      // Cache Locally
+      const receiptCache = {
+        rNo: document.getElementById("rNo").value,
+        cust: document.getElementById("cust").value,
+        rDate: document.getElementById("rDate").value,
+        method: document.getElementById("method").value,
+        disc: document.getElementById("disc").value,
+        note: document.getElementById("note").value,
+        items: itemsArray
+      };
+      localStorage.setItem("activeReceipt", JSON.stringify(receiptCache));
+      saveProfile();
+    }
+
+    // 7. PDF Logic
+    function download() {
+      const element = document.getElementById("receiptCard");
+      const originalBoxShadow = element.style.boxShadow;
+      element.style.boxShadow = "none";
+      element.style.backgroundColor = "white";
+
+      const receiptNo = document.getElementById("rNo").value || "001";
+      const opt = {
+        margin: [8, 8, 8, 8], // Equal margins on all sides
+        filename: `Receipt_${receiptNo}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: {
+          scale: 3, // Increased scale for better quality
+          useCORS: true,
+          letterRendering: true,
+          scrollY: 0,
+          scrollX: 0
+        },
+        jsPDF: { unit: 'mm', format: [100, 250], orientation: 'portrait' } // Slightly wider for better content fit
+      };
+
+      html2pdf().set(opt).from(element).save().then(() => {
+        element.style.boxShadow = originalBoxShadow;
+      });
+    }
+  </script>
+</body>
+
+</html>

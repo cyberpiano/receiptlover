@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receiptlover - Create Beautiful Receipts in Seconds</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap");
+
+    body {
+      font-family: "Inter", sans-serif;
+    }
+
+    .font-poppins {
+      font-family: "Poppins", sans-serif;
+    }
+
+    .gradient-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg,
+          #667eea 0%,
+          #764ba2 50%,
+          #f093fb 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .gradient-card {
+      background: linear-gradient(135deg,
+          rgba(102, 126, 234, 0.1) 0%,
+          rgba(118, 75, 162, 0.1) 100%);
+    }
+
+    @keyframes float {
+
+      0%,
+      100% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-20px);
+      }
+    }
+
+    .float-animation {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+
+      0%,
+      100% {
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+      }
+
+      50% {
+        box-shadow: 0 0 40px rgba(102, 126, 234, 0.8);
+      }
+    }
+
+    .pulse-glow {
+      animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .hover-lift {
+      transition: all 0.3s ease;
+    }
+
+    .hover-lift:hover {
+      transform: translateY(-8px);
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 text-slate-900">
+  <nav class="container mx-auto px-6 py-6 flex justify-between items-center relative z-50">
+    <div class="flex items-center gap-3 text-2xl font-black font-poppins">
+      <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white">
+        <i class="fa-solid fa-heart text-lg"></i>
+      </div>
+      <span class="gradient-text">Receiptlover</span>
+    </div>
+
+    <div class="hidden md:flex gap-4 items-center">
+      <a href="support.html" class="px-6 py-2 font-semibold text-slate-600 hover:text-purple-600 transition">Support</a>
+      <a href="login.html" class="px-6 py-2 font-semibold text-slate-600 hover:text-purple-600 transition">Log In</a>
+      <a href="signup.html" class="px-6 py-3 gradient-bg text-white font-bold rounded-xl shadow-lg">Start Free Trial</a>
+    </div>
+
+    <button id="mobile-menu-button" class="md:hidden text-slate-600 p-2 focus:outline-none">
+      <i id="menu-icon" class="fa-solid fa-bars text-2xl"></i>
+    </button>
+
+    <div id="mobile-menu"
+      class="hidden absolute top-full left-0 right-0 mx-6 mt-2 p-6 bg-white rounded-2xl shadow-2xl border border-purple-100 flex-col gap-4 items-center text-center md:hidden">
+      <a href="support.html" class="w-full py-3 font-semibold text-slate-600 hover:bg-slate-50 rounded-xl">Support</a>
+      <a href="login.html" class="w-full py-3 font-semibold text-slate-600 hover:bg-slate-50 rounded-xl">Log In</a>
+      <a href="signup.html" class="w-full py-4 gradient-bg text-white font-bold rounded-xl">Start Free Trial</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="container mx-auto px-6 py-16 md:py-24 text-center max-w-5xl">
+    <div class="inline-block mb-6 px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold">
+      <i class="fa-solid fa-sparkles mr-2"></i>3-Day Free Trial Available
+    </div>
+
+    <h1 class="text-5xl md:text-7xl font-black font-poppins mb-6 leading-tight">
+      Create Receipts You'll
+      <span class="gradient-text">Actually Love</span>
+    </h1>
+
+    <p class="text-xl text-slate-600 mb-10 max-w-3xl mx-auto leading-relaxed">
+      Professional receipts and invoices in seconds. Beautiful designs,
+      digital signatures, and instant PDF downloads. Perfect for businesses of
+      all sizes.
+    </p>
+
+    <div class="flex flex-col md:flex-row gap-4 justify-center items-center mb-8">
+      <a href="signup.html"
+        class="px-10 py-5 gradient-bg text-white text-lg font-bold rounded-2xl hover:shadow-2xl transition shadow-xl shadow-purple-300 flex items-center justify-center gap-3 pulse-glow hover:scale-105">
+        <i class="fa-solid fa-rocket"></i>
+        Get Started Free
+      </a>
+      <a href="login.html"
+        class="px-10 py-5 bg-white text-slate-700 text-lg font-bold rounded-2xl border-2 border-purple-200 hover:border-purple-400 hover:shadow-xl transition flex items-center justify-center gap-3 hover:scale-105">
+        <i class="fa-solid fa-arrow-right-to-bracket"></i>
+        Login
+      </a>
+    </div>
+
+    <div class="flex items-center justify-center gap-6 text-sm text-slate-500">
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-check-circle text-green-500"></i>
+        <span>No credit card required</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-check-circle text-green-500"></i>
+        <span>3-day free trial</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <i class="fa-solid fa-check-circle text-green-500"></i>
+        <span>Cancel anytime</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Features Section -->
+  <section class="py-20">
+    <div class="container mx-auto px-6">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl font-black font-poppins mb-4">
+          Everything You Need,
+          <span class="gradient-text">Nothing You Don't</span>
+        </h2>
+        <p class="text-lg text-slate-600 max-w-2xl mx-auto">
+          Powerful features designed to make receipt creation effortless and
+          professional.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Feature 1 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-purple-100 hover:border-purple-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 gradient-bg text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation">
+            <i class="fa-solid fa-pen-nib"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Digital Signatures
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Sign receipts directly on your device. Add a professional touch
+            with our integrated signature pad and custom branding.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-blue-100 hover:border-blue-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation"
+            style="animation-delay: 0.5s">
+            <i class="fa-solid fa-file-pdf"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Instant PDF Download
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Generate print-ready PDFs instantly. Send them to clients via
+            email or WhatsApp in just one click.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-pink-100 hover:border-pink-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-500 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation"
+            style="animation-delay: 1s">
+            <i class="fa-solid fa-globe"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Global Currencies
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Support for USD, GHS, NGN, GBP, EUR, and 20+ other currencies.
+            Perfect for international business.
+          </p>
+        </div>
+
+        <!-- Feature 4 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-green-100 hover:border-green-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation"
+            style="animation-delay: 0.3s">
+            <i class="fa-solid fa-palette"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Custom Branding
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Customize colors, add your logo, and create receipts that match
+            your brand identity perfectly.
+          </p>
+        </div>
+
+        <!-- Feature 5 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-orange-100 hover:border-orange-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-500 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation"
+            style="animation-delay: 0.7s">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Lightening Fast
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Create professional receipts in under 30 seconds. No complicated
+            forms or confusing interfaces.
+          </p>
+        </div>
+
+        <!-- Feature 6 -->
+        <div
+          class="p-8 rounded-3xl bg-white border-2 border-indigo-100 hover:border-indigo-300 hover:shadow-2xl transition duration-300 hover-lift">
+          <div
+            class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center text-3xl mb-6 float-animation"
+            style="animation-delay: 1.2s">
+            <i class="fa-solid fa-mobile-screen"></i>
+          </div>
+          <h3 class="text-2xl font-bold font-poppins mb-3 text-slate-800">
+            Mobile Friendly
+          </h3>
+          <p class="text-slate-600 leading-relaxed">
+            Works perfectly on any device. Create receipts on the go from your
+            phone, tablet, or desktop.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="py-20">
+    <div class="container mx-auto px-6">
+      <div class="gradient-bg rounded-3xl p-12 md:p-16 text-center text-white shadow-2xl">
+        <h2 class="text-4xl md:text-5xl font-black font-poppins mb-6">
+          Ready to Create Amazing Receipts?
+        </h2>
+        <p class="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
+          Join thousands of businesses who trust Receiptlover for their
+          receipt generation needs.
+        </p>
+        <a href="signup.html"
+          class="inline-block px-12 py-5 bg-white text-purple-600 text-lg font-bold rounded-2xl hover:shadow-2xl transition hover:scale-105">
+          <i class="fa-solid fa-rocket mr-2"></i>
+          Start Your Free Trial
+        </a>
+        <p class="mt-6 text-sm opacity-75">
+          No credit card required • 3-day free trial • Cancel anytime
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="container mx-auto px-6 py-12 text-center">
+    <div class="flex items-center justify-center gap-3 text-2xl font-black font-poppins mb-4">
+      <div class="w-8 h-8 gradient-bg rounded-lg flex items-center justify-center text-white">
+        <i class="fa-solid fa-heart text-sm"></i>
+      </div>
+      <span class="gradient-text">receiptlover</span>
+    </div>
+    <p class="text-slate-500 text-sm">
+      &copy; 2026 Receiptlover. All rights reserved. Made with
+      <i class="fa-solid fa-heart text-red-500"></i> for businesses
+      everywhere.
+    </p>
+  </footer>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const menuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const menuIcon = document.getElementById('menu-icon');
+
+      menuButton.addEventListener('click', function () {
+        const isOpened = mobileMenu.classList.contains('flex');
+
+        if (!isOpened) {
+          // OPEN MENU
+          mobileMenu.classList.remove('hidden');
+          mobileMenu.classList.add('flex');
+
+          // Change to X icon
+          menuIcon.classList.remove('fa-bars');
+          menuIcon.classList.add('fa-xmark');
+        } else {
+          // CLOSE MENU
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('flex');
+
+          // Change back to Hamburger icon
+          menuIcon.classList.remove('fa-xmark');
+          menuIcon.classList.add('fa-bars');
+        }
+      });
+
+      // Optional: Close menu if user clicks anywhere else on the screen
+      document.addEventListener('click', function (event) {
+        if (!menuButton.contains(event.target) && !mobileMenu.contains(event.target)) {
+          mobileMenu.classList.add('hidden');
+          mobileMenu.classList.remove('flex');
+          menuIcon.classList.remove('fa-xmark');
+          menuIcon.classList.add('fa-bars');
+        }
+      });
+    });
+  </script>
+</body>
+
+</html>

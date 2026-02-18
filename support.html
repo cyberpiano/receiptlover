@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Support - Receiptlover</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800;900&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+        }
+
+        .font-poppins {
+            font-family: "Poppins", sans-serif;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        @keyframes float {
+
+            0%,
+            100% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        .float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.9);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        .pulse-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+    </style>
+</head>
+
+<body class="bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 min-h-screen p-4">
+
+    <!-- Navbar -->
+    <nav class="container mx-auto px-6 py-6 flex justify-between items-center relative z-50">
+        <div class="flex items-center gap-3 text-2xl font-black font-poppins">
+            <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center text-white">
+                <i class="fa-solid fa-heart text-lg"></i>
+            </div>
+            <span class="gradient-text">Receiptlover</span>
+        </div>
+
+        <div class="hidden md:flex gap-4 items-center">
+            <a href="index.html"
+                class="px-6 py-2 font-semibold text-slate-600 hover:text-purple-600 transition">Home</a>
+            <a href="login.html" class="px-6 py-2 font-semibold text-slate-600 hover:text-purple-600 transition">Log
+                In</a>
+            <a href="signup.html" class="px-6 py-3 gradient-bg text-white font-bold rounded-xl shadow-lg">Start Free
+                Trial</a>
+        </div>
+
+        <button id="mobile-menu-button" class="md:hidden text-slate-600 p-2 focus:outline-none">
+            <i id="menu-icon" class="fa-solid fa-bars text-2xl"></i>
+        </button>
+
+        <div id="mobile-menu"
+            class="hidden absolute top-full left-0 right-0 mx-6 mt-2 p-6 bg-white rounded-2xl shadow-2xl border border-purple-100 flex-col gap-4 items-center text-center md:hidden">
+            <a href="index.html" class="w-full py-3 font-semibold text-slate-600 hover:bg-slate-50 rounded-xl">Home</a>
+            <a href="login.html" class="w-full py-3 font-semibold text-slate-600 hover:bg-slate-50 rounded-xl">Log
+                In</a>
+            <a href="signup.html" class="w-full py-4 gradient-bg text-white font-bold rounded-xl">Start Free Trial</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-6 flex items-center justify-center">
+        <div class="max-w-4xl w-full">
+
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-center gap-3 mb-4">
+
+                    <h2 class="text-4xl font-black font-poppins gradient-text">We're Here to Help!</h2>
+                </div>
+                <p class="text-slate-600 max-w-2xl mx-auto">
+                    Have questions about your payment or subscription? Our support team is ready to assist you.
+                </p>
+            </div>
+
+            <!-- Main Support Card -->
+            <div class="bg-white p-6 md:p-10 rounded-3xl shadow-2xl border border-purple-100 mb-6 w-full max-w-full">
+
+                <!-- WhatsApp Support -->
+                <div class="text-center mb-8">
+                    <div class="relative inline-block mb-6">
+                        <div class="absolute inset-0 bg-green-400 rounded-full pulse-ring"></div>
+                        <div class="absolute inset-0 bg-green-400 rounded-full pulse-ring" style="animation-delay: 1s;">
+                        </div>
+                        <div
+                            class="relative w-24 h-24 bg-green-500 rounded-full flex items-center justify-center text-white shadow-2xl float">
+                            <i class="fa-brands fa-whatsapp text-5xl"></i>
+                        </div>
+                    </div>
+
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">Contact Us on WhatsApp</h3>
+                    <p class="text-slate-600 mb-6">
+                        Get instant support from our team. We typically respond within minutes during business hours.
+                    </p>
+
+                    <!-- WhatsApp Button -->
+                    <a href="https://wa.me/233505671965?text=Hi%2C%20I%20need%20help%20with%20my%20ilovereceipt%20account"
+                        target="_blank"
+                        class="inline-flex items-center gap-3 px-8 py-4 bg-green-500 text-white font-bold text-lg rounded-2xl hover:bg-green-600 transition shadow-lg shadow-green-200 hover:scale-105 transform">
+                        <i class="fa-brands fa-whatsapp text-2xl"></i>
+                        Chat with Support
+                    </a>
+
+                    <p class="text-sm text-slate-500 mt-3">
+                        WhatsApp: <span class="font-semibold">+233 505 671 965</span>
+                    </p>
+
+                    <p class="text-sm text-slate-500 mt-4">
+                        <i class="fa-solid fa-clock mr-1"></i>
+                        Business Hours: Monday - Sunday, 6:00 AM - 8:00 PM GMT
+                    </p>
+                </div>
+
+                <!-- Mobile Money Payment Details -->
+                <div class="border-t border-slate-200 pt-8">
+                    <h3 class="text-2xl font-bold text-slate-800 mb-6 text-center">Mobile Money Payment</h3>
+                    <div class="bg-gradient-to-br from-purple-50 to-blue-50 p-8 rounded-2xl border-2 border-purple-200">
+                        <div class="text-center mb-6">
+                            <div
+                                class="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center text-white mx-auto mb-4 shadow-lg">
+                                <i class="fa-solid fa-mobile-screen text-3xl"></i>
+                            </div>
+                            <h4 class="text-xl font-bold text-slate-800 mb-2">Telecel Mobile Money</h4>
+                            <p class="text-slate-600 mb-4">Pay your subscription directly via Telecel Mobile Money</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border-2 border-purple-100 text-center">
+                            <p class="text-sm text-slate-600 mb-2">Number:</p>
+                            <p class="text-xl font-black text-purple-600 mb-4">0505 671 965</p>
+                            <p class="text-xs text-slate-500">Save this number for easy reference</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-200 pt-8">
+                        <h4 class="text-lg font-bold text-slate-800 mb-4 text-center">What you can get help with:</h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="flex items-start gap-3 p-4 bg-purple-50 rounded-xl">
+                                <div
+                                    class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-credit-card"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Payment Issues</p>
+                                    <p class="text-sm text-slate-600">Problems with MoMo payments or verification</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-4 bg-blue-50 rounded-xl">
+                                <div
+                                    class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-user-check"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Account Activation</p>
+                                    <p class="text-sm text-slate-600">Status updates on payment approvals</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-4 bg-green-50 rounded-xl">
+                                <div
+                                    class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-file-invoice"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-800">Subscription Plans</p>
+                                    <p class="text-sm text-slate-600">Questions about pricing and features</p>
+                                </div>
+                            </div>
+
+                            <div class="flex items-start gap-3 p-4 bg-yellow-50 rounded-xl">
+                                <div
+                                    class="w-10 h-10 bg-yellow-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                                    <i class="fa-solid fa-question-circle"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-slate-800">General Support</p>
+                                    <p class="text-sm text-slate-600">Any other questions or concerns</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FAQ Section -->
+                <div class="bg-white p-8 rounded-3xl shadow-lg border border-purple-100 mb-6">
+                    <h3 class="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <i class="fa-solid fa-circle-question text-purple-600"></i>
+                        Frequently Asked Questions
+                    </h3>
+
+                    <div class="space-y-4">
+                        <details class="group">
+                            <summary
+                                class="cursor-pointer p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition font-semibold text-slate-800 flex items-center justify-between">
+                                How long does payment verification take?
+                                <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="p-4 text-slate-600 text-sm">
+                                Payment verification typically takes 10-20 minutes during business hours. You'll receive
+                                a
+                                notification once your payment is approved.
+                            </div>
+                        </details>
+
+                        <details class="group">
+                            <summary
+                                class="cursor-pointer p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition font-semibold text-slate-800 flex items-center justify-between">
+                                What if I made a mistake in my payment details?
+                                <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="p-4 text-slate-600 text-sm">
+                                Contact us immediately on WhatsApp with your correct payment details. Our support team
+                                will
+                                update your information.
+                            </div>
+                        </details>
+
+                        <details class="group">
+                            <summary
+                                class="cursor-pointer p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition font-semibold text-slate-800 flex items-center justify-between">
+                                Can I get a refund if I change my mind?
+                                <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="p-4 text-slate-600 text-sm">
+                                Please review our refund policy or contact our support team on WhatsApp to discuss your
+                                specific
+                                situation.
+                            </div>
+                        </details>
+
+                        <details class="group">
+                            <summary
+                                class="cursor-pointer p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition font-semibold text-slate-800 flex items-center justify-between">
+                                What payment methods do you accept?
+                                <i class="fa-solid fa-chevron-down group-open:rotate-180 transition-transform"></i>
+                            </summary>
+                            <div class="p-4 text-slate-600 text-sm">
+                                We currently accept Mobile Money (MoMo) payments. More payment options will be available
+                                soon!
+                            </div>
+                        </details>
+                    </div>
+                </div>
+
+                <!-- Back Button -->
+                <div class="text-center">
+                    <a href="index.html"
+                        class="inline-flex items-center gap-2 text-slate-600 hover:text-purple-600 transition font-semibold">
+                        <i class="fa-solid fa-arrow-left"></i>
+                        Back to Home
+                    </a>
+                </div>
+
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const menuButton = document.getElementById('mobile-menu-button');
+                const mobileMenu = document.getElementById('mobile-menu');
+                const menuIcon = document.getElementById('menu-icon');
+
+                menuButton.addEventListener('click', function () {
+                    const isOpened = mobileMenu.classList.contains('flex');
+
+                    if (!isOpened) {
+                        // OPEN MENU
+                        mobileMenu.classList.remove('hidden');
+                        mobileMenu.classList.add('flex');
+
+                        // Change to X icon
+                        menuIcon.classList.remove('fa-bars');
+                        menuIcon.classList.add('fa-xmark');
+                    } else {
+                        // CLOSE MENU
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.remove('flex');
+
+                        // Change back to Hamburger icon
+                        menuIcon.classList.remove('fa-xmark');
+                        menuIcon.classList.add('fa-bars');
+                    }
+                });
+
+                // Optional: Close menu if user clicks anywhere else on the screen
+                document.addEventListener('click', function (event) {
+                    if (!menuButton.contains(event.target) && !mobileMenu.contains(event.target)) {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenu.classList.remove('flex');
+                        menuIcon.classList.remove('fa-xmark');
+                        menuIcon.classList.add('fa-bars');
+                    }
+                });
+            });
+        </script>
+
+</body>
+
+</html>
